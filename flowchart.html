@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Risk Assessment Flowchart — SFARP Methodology</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    .flowchart-card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 32px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .flowchart-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--gray-800);
+      margin-bottom: 6px;
+    }
+
+    .flowchart-subtitle {
+      font-size: 13px;
+      color: var(--gray-600);
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    .mermaid {
+      width: 100%;
+      max-width: 720px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 32px;
+      justify-content: center;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--gray-600);
+    }
+
+    .legend-swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .nav-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      opacity: 0.85;
+      transition: opacity .15s;
+    }
+    .nav-link:hover { opacity: 1; }
+    .nav-link svg { flex-shrink: 0; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <span>Risk Assessment Flowchart</span>
+      </div>
+      <p class="tagline">SFARP — So Far As Reasonably Practicable methodology</p>
+      <a href="index.html" class="nav-link" style="margin-left:auto">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        URL Parser
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="flowchart-card">
+      <h1 class="flowchart-title">Hazard-Based Risk Assessment Sequence</h1>
+      <p class="flowchart-subtitle">
+        A valid assessment always begins with the hazard and traces the causal pathway forward.<br>
+        Starting from the consequence invalidates the assessment.
+      </p>
+
+      <div class="mermaid">
+flowchart TD
+    A["Step 1: HAZARD\nThe source of harm\nStable and always present"]
+    B["Step 2: CAUSAL PATHWAY\nHow the hazard realistically\nleads to harm"]
+    C["Step 3: INCIDENT / EVENT SCENARIO\nWhat goes wrong\nalong that pathway"]
+    D["Step 4: CREDIBLE SERIOUS CONSEQUENCE\nWorst credible outcome\nSets consequence severity"]
+    E["Step 5: CONTROLS\nWhat prevents, detects,\nor mitigates along the pathway"]
+    F(["Assessment valid\nSFARP demonstrable"])
+    G(["Assessment broken\nDo not proceed"])
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+
+    X["Starting at Step 4\nConsequence first"] --> G
+
+    style A fill:#1F3864,color:#ffffff,stroke:#1F3864
+    style B fill:#1F3864,color:#ffffff,stroke:#1F3864
+    style C fill:#1F3864,color:#ffffff,stroke:#1F3864
+    style D fill:#1F3864,color:#ffffff,stroke:#1F3864
+    style E fill:#1F3864,color:#ffffff,stroke:#1F3864
+    style F fill:#2E7D32,color:#ffffff,stroke:#2E7D32
+    style G fill:#B71C1C,color:#ffffff,stroke:#B71C1C
+    style X fill:#D9E2F3,color:#1F3864,stroke:#1F3864
+      </div>
+
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#1F3864;"></div>
+          <span>Assessment steps (hazard → controls)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#2E7D32;"></div>
+          <span>Valid outcome — SFARP demonstrable</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#B71C1C;"></div>
+          <span>Broken outcome — do not proceed</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#D9E2F3; border:1px solid #1F3864;"></div>
+          <span>Invalid starting point (consequence-first)</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="font-size:13px; color:var(--gray-600); line-height:1.7;">
+      <h2 style="font-size:15px; font-weight:700; color:var(--gray-800); margin-bottom:12px;">About this methodology</h2>
+      <p style="margin-bottom:10px;">
+        A hazard-based risk assessment must always start with the <strong>hazard</strong> — the stable, ever-present source of potential harm — and trace forward through a realistic causal pathway to identify credible consequences.
+      </p>
+      <p style="margin-bottom:10px;">
+        Controls (Step 5) are only meaningful once the hazard, pathway, scenario, and consequence are firmly established. Controls that cannot be anchored to a specific step along the causal pathway are invalid.
+      </p>
+      <p>
+        Starting the assessment at Step 4 (consequence-first) breaks the logical chain, prevents proper SFARP demonstration, and must not proceed.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    Risk Assessment Flowchart — SFARP methodology reference
+  </footer>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        fontSize: '14px',
+      },
+      flowchart: {
+        curve: 'linear',
+        padding: 20,
+      },
+    });
+  </script>
+</body>
+</html>
