@@ -40,6 +40,16 @@
 <div class="chart-card"><div class="chart-title">Incidents by Type</div><canvas id="typeChart"></canvas></div>
 <div class="chart-card" style="grid-column:1/-1"><div class="chart-title">CAR Priority × Status Breakdown</div><canvas id="carPriChart" style="max-height:220px"></canvas></div>
 </div>
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin:28px 0 4px;gap:16px;flex-wrap:wrap">
+<h2 style="font-size:13px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.06em">Injury, Incident &amp; Claims Performance Analysis
+<span style="display:inline-block;font-size:10px;font-weight:600;color:#fff;background:#7C3AED;padding:2px 8px;border-radius:999px;text-transform:none;letter-spacing:0;vertical-align:middle;margin-left:6px">Upload monthly data file</span></h2>
+<a href="injury-claims-dashboard.html" target="_blank" rel="noopener" style="font-size:11.5px;color:#2563EB;font-weight:600;text-decoration:none;white-space:nowrap">Open full dashboard ↗</a>
+</div>
+<p style="font-size:12px;color:var(--gray-400);margin-bottom:12px">VRTP Safety Performance Dashboard — upload the monthly injury/claims extract (.xlsx/.xls/.csv) for LTIFR, TRIFR, days lost, claims, location breakdown and 12-month trend analysis.</p>
+<div class="card" style="padding:0;overflow:hidden">
+<iframe id="vrtpFrame" src="injury-claims-dashboard.html" style="width:100%;height:1900px;border:0;display:block" title="VRTP Safety Performance Dashboard"></iframe>
+</div>
 </main>
 <footer class="site-footer">TP Risk Management SMS — Dashboard</footer>
 <script src="sms-shared.js"></script>

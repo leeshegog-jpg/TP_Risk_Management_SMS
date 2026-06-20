@@ -1,1 +1,1456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GOHS4.1.8.X FARSI Control Effectiveness Calculator v0.2</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Calibri,Arial,sans-serif;font-size:13px;color:#222;background:#f0f2f5;min-height:100vh}
 
+/* ---- Header ---- */
+.app-header{background:linear-gradient(135deg,#1F3864 0%,#2E5496 100%);color:#fff;padding:14px 20px 10px;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.app-header h1{font-size:15px;font-weight:700;letter-spacing:.3px}
+.app-header .meta{font-size:10.5px;opacity:.75;margin-top:4px;display:flex;flex-wrap:wrap;gap:12px}
+.app-header .meta span::before{content:"│ ";opacity:.5}
+.app-header .meta span:first-child::before{content:""}
+
+/* ---- Tabs ---- */
+.tab-bar{display:flex;background:#1a2e56;overflow-x:auto;border-bottom:3px solid #2E5496}
+.tab-btn{padding:9px 18px;color:rgba(255,255,255,.65);cursor:pointer;white-space:nowrap;font-size:12px;border:none;background:transparent;transition:all .2s;border-bottom:3px solid transparent;margin-bottom:-3px}
+.tab-btn:hover{color:#fff;background:rgba(255,255,255,.07)}
+.tab-btn.active{color:#fff;background:#f0f2f5;color:#1F3864;font-weight:700;border-bottom:3px solid #2E5496}
+
+/* ---- Tab Panels ---- */
+.tab-panel{display:none;padding:16px 20px;max-width:100%;overflow-x:auto}
+.tab-panel.active{display:block}
+
+/* ---- Cards ---- */
+.card{background:#fff;border-radius:5px;padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.09);border-top:3px solid #2E5496}
+.card h2{font-size:12px;color:#1F3864;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #e0e7f3}
+.card h3{font-size:12px;color:#2E5496;margin:10px 0 5px;font-weight:700}
+.card p,.card li{font-size:12px;line-height:1.6;margin-bottom:4px}
+.card ul,.card ol{padding-left:20px}
+.card table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px}
+.card table th{background:#2E5496;color:#fff;padding:6px 8px;text-align:left}
+.card table td{padding:5px 8px;border:1px solid #dde3f0;vertical-align:top}
+.card table tr:nth-child(even) td{background:#f6f8fd}
+
+/* ---- Grid layouts ---- */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+@media(max-width:800px){.two-col,.three-col{grid-template-columns:1fr}}
+
+/* ---- Risk colour palette ---- */
+.risk-extreme{background:#C00000!important;color:#fff!important;font-weight:700}
+.risk-high{background:#FF0000!important;color:#fff!important;font-weight:700}
+.risk-medium{background:#FFC000!important;color:#333!important;font-weight:700}
+.risk-low{background:#92D050!important;color:#264417!important;font-weight:700}
+
+/* ---- Calculator section ---- */
+.calc-card{background:#fff;border-radius:5px;padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.09)}
+.calc-card h2{font-size:12px;color:#fff;text-transform:uppercase;letter-spacing:.6px;background:#2E5496;padding:8px 12px;margin:-16px -16px 14px;border-radius:5px 5px 0 0}
+
+/* ---- Form controls ---- */
+.form-group{display:flex;flex-direction:column;gap:3px}
+.form-group label{font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.4px}
+input[type=text],input[type=number],select,textarea{border:1px solid #c8d0e0;border-radius:3px;padding:5px 7px;font-size:12px;font-family:inherit;width:100%;background:#fff}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#2E5496;box-shadow:0 0 0 2px rgba(46,84,150,.18)}
+input:disabled,select:disabled{background:#f0f0f0;opacity:.5;cursor:not-allowed}
+
+.hazard-grid{display:grid;grid-template-columns:3fr 1fr 1fr 1fr 1fr;gap:10px;align-items:end;margin-bottom:14px}
+@media(max-width:900px){.hazard-grid{grid-template-columns:1fr 1fr}}
+
+/* ---- Calculated output cells ---- */
+.out{background:#eef1fb;border:1px solid #c5d0ec;border-radius:3px;padding:4px 7px;font-size:11.5px;font-weight:700;color:#1F3864;min-height:27px;display:flex;align-items:center;white-space:nowrap}
+
+/* ---- Controls table wrapper ---- */
+.tbl-wrap{overflow-x:auto;margin-bottom:10px}
+.ctrl-tbl{min-width:2100px;border-collapse:collapse;font-size:11px;width:100%}
+.ctrl-tbl th{background:#2E5496;color:#fff;padding:5px 6px;text-align:center;white-space:nowrap;border:1px solid #1a3a7a;font-size:10px}
+.ctrl-tbl td{padding:3px 4px;border:1px solid #dde3f0;vertical-align:middle}
+.ctrl-tbl tbody tr:nth-child(even) td{background:#f6f8fd}
+.ctrl-tbl tbody tr:hover td{background:#e8eefa}
+.ctrl-tbl select,.ctrl-tbl input[type=text],.ctrl-tbl input[type=number]{font-size:11px;padding:2px 4px}
+.ctrl-tbl .out{font-size:10.5px;padding:2px 5px;min-height:22px}
+.grp-hdr{background:#dbe5f1!important;color:#1F3864!important;font-weight:700!important;text-align:center!important;font-size:10px!important}
+
+/* ---- Buttons ---- */
+.btn{padding:6px 14px;border:none;border-radius:3px;cursor:pointer;font-size:12px;font-family:inherit;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+.btn-primary{background:#2E5496;color:#fff}.btn-primary:hover{background:#1F3864}
+.btn-danger{background:#C00000;color:#fff}.btn-danger:hover{background:#900000}
+.btn-success{background:#375623;color:#fff}.btn-success:hover{background:#264417}
+.btn-warn{background:#FFC000;color:#333}.btn-warn:hover{background:#e6ac00}
+.btn-sm{padding:2px 8px;font-size:10.5px}
+
+/* ---- Summary cards ---- */
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+@media(max-width:900px){.summary-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:500px){.summary-grid{grid-template-columns:1fr}}
+.sum-card{background:#fff;border-radius:5px;padding:14px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.1);border:1px solid #dde3f0}
+.sum-card .lbl{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.sum-card .val{font-size:26px;font-weight:700;color:#1F3864}
+.sum-card .sub{font-size:11px;color:#555;margin-top:5px}
+.sum-card.rating-card .lbl{color:rgba(255,255,255,.85)}
+.sum-card.rating-card .val{color:#fff;font-size:20px}
+.sum-card.rating-card .sub{color:rgba(255,255,255,.8)}
+
+/* ---- Traceability grid ---- */
+.trace-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:700px){.trace-grid{grid-template-columns:1fr}}
+
+/* ---- Warnings / info boxes ---- */
+.warn-box{background:#fff8e1;border-left:4px solid #FFC000;padding:9px 13px;border-radius:3px;font-size:11.5px;margin-bottom:10px}
+.warn-box strong{color:#7d5a00}
+.floor-flag{background:#fff3cd!important;color:#7d5a00!important;border-color:#FFC000!important}
+.info-box{background:#e3eafc;border-left:4px solid #2E5496;padding:9px 13px;border-radius:3px;font-size:11.5px;margin-bottom:10px}
+.info-box strong{color:#1F3864}
+.ok-box{background:#f0fbe5;border-left:4px solid #92D050;padding:9px 13px;border-radius:3px;font-size:11.5px;margin-bottom:10px}
+
+/* ---- Risk matrix ---- */
+.risk-matrix td{text-align:center;font-weight:700;min-width:72px;border:1px solid #aaa}
+.risk-matrix .row-hdr{background:#dbe5f1;font-weight:700;font-size:10px;text-align:left;padding:5px 8px;white-space:normal;min-width:130px}
+
+/* ---- FARSI criteria table ---- */
+.farsi-crit td{font-size:11.5px;padding:6px 8px;border:1px solid #dde3f0}
+.farsi-crit th{background:#2E5496;color:#fff;padding:6px 8px}
+.score-1{color:#C00000;font-weight:700}
+.score-3{color:#c07a00;font-weight:700}
+.score-5{color:#375623;font-weight:700}
+
+/* ---- FARSI attribute header ---- */
+.attr-hdr{background:#1F3864;color:#fff;padding:9px 14px;border-radius:4px 4px 0 0;font-size:13px;font-weight:700;margin:-16px -16px 12px}
+
+/* ---- Legend chips ---- */
+.legend{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.chip{padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700}
+
+/* ---- Step list ---- */
+.step-list{counter-reset:steps;list-style:none;padding:0}
+.step-list li{counter-increment:steps;padding:6px 0 6px 34px;position:relative;border-bottom:1px solid #f0f0f0;font-size:12px;line-height:1.5}
+.step-list li::before{content:counter(steps);position:absolute;left:0;top:5px;background:#2E5496;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.step-list li:last-child{border-bottom:none}
+
+/* ---- Progress indicator ---- */
+.reduction-bar{height:10px;background:#e0e7f3;border-radius:5px;overflow:hidden;margin-top:4px}
+.reduction-fill{height:100%;background:linear-gradient(90deg,#92D050,#2E5496);border-radius:5px;transition:width .4s}
+
+/* ---- Print-purpose block (hidden on screen, shown in print-mode) ---- */
+.print-purpose{display:none!important}
+
+/* ---- Print ---- */
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  .tab-bar,.no-print,.btn{display:none!important}
+
+  /* Default full-page print (Ctrl+P): show everything */
+  .tab-panel{display:block!important;page-break-after:always}
+
+  /* Print-mode (via Print button): only Calculator + Purpose section */
+  body.print-mode .tab-panel{display:none!important}
+  body.print-mode #tab-calculator{display:block!important}
+  body.print-mode .print-purpose{display:block!important;page-break-after:avoid!important}
+
+  /* Page layout in print-mode:
+     Page 1 → Purpose + Traceability (JS moves traceCard here)
+     Page 2 → Step 1 + Table + Summary                          */
+  body.print-mode #traceCard{display:block!important;page-break-after:always!important;margin-top:12px}
+  body.print-mode #step1Card{page-break-before:always!important}
+
+  /* Table fixes — force table into available width, override all inline min-widths */
+  .tbl-wrap{overflow:visible!important}
+  .ctrl-tbl{width:100%!important;min-width:0!important;font-size:7.5px!important;table-layout:auto!important}
+  .ctrl-tbl th,.ctrl-tbl td{padding:2px 3px!important;white-space:normal!important;min-width:0!important}
+  .ctrl-tbl input,.ctrl-tbl select{width:100%!important;min-width:0!important;font-size:7px!important}
+  /* Hide intermediate columns — zero-width preserves colspan integrity */
+  .col-hide{width:0!important;max-width:0!important;padding:0!important;border-left:0!important;border-right:0!important;overflow:hidden!important}
+  .col-hide>*{visibility:hidden!important}
+
+  /* Card page-break hints */
+  .calc-card{page-break-inside:avoid;box-shadow:none!important;border:1px solid #ccc!important}
+  .card{page-break-inside:avoid;box-shadow:none!important}
+
+  /* Colour cells must print */
+  .risk-extreme{background:#C00000!important;color:#fff!important}
+  .risk-high{background:#FF0000!important;color:#fff!important}
+  .risk-medium{background:#FFC000!important;color:#333!important}
+  .risk-low{background:#92D050!important;color:#264417!important}
+  .sum-card.rating-card{border:2px solid #333!important}
+  .app-header{background:#1F3864!important}
+}
+
+/* ---- Scrollbar styling ---- */
+::-webkit-scrollbar{height:6px;width:6px}
+::-webkit-scrollbar-track{background:#f0f2f5}
+::-webkit-scrollbar-thumb{background:#c0c8e0;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#2E5496}
+
+.draft-badge{display:inline-block;background:#FFC000;color:#7d5a00;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:10px;vertical-align:middle}
+</style>
+<style>
+/* ---- Landscape for all prints (keeps wide table readable) ---- */
+@page{size:A4 landscape;margin:1cm 1.5cm}
+</style>
+</head>
+<body>
+
+<!-- ===================== HEADER ===================== -->
+<div class="app-header">
+  <h1>GOHS4.1.8.X — FARSI Control Effectiveness Calculator v0.2 <span class="draft-badge">DRAFT</span></h1>
+  <div class="meta">
+    <span>Doc No: GOHS4.1.8.X (placeholder – confirm on approval)</span>
+    <span>Parent: GOHS4.1.8 v7 Risk Assessment Standard</span>
+    <span>Approval Authority: Executive OHS&amp;E Officer</span>
+    <span>Author: Safety Systems</span>
+    <span>Scope: Standalone control effectiveness calculation aid</span>
+    <span>Rev: Effectiveness bands &amp; safeguards updated per FARSI Reduction Factors guidance (2026-06-21)</span>
+  </div>
+</div>
+
+<!-- ===================== PRINT-ONLY: PURPOSE SECTION ===================== -->
+<div class="print-purpose" style="padding:16px 20px">
+  <div class="card" style="border-top:3px solid #2E5496;background:#fff;border-radius:5px;padding:16px;margin-bottom:14px">
+    <h2 style="font-size:12px;color:#1F3864;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #e0e7f3">1. Purpose</h2>
+    <p style="font-size:12px;font-weight:700;margin-bottom:4px">Overview</p>
+    <p style="font-size:12px;line-height:1.6;margin-bottom:8px">This workbook calculates the residual likelihood reduction achieved when controls are applied to a defined hazard. It supports the Inherent / Current staged approach endorsed by ISO 45002:2023 Cl 6.1.2.2 guidance. It is <strong>NOT</strong> a prescribed ISO 45001 / ISO 45002 method. Output is transferred to the parent risk assessment in Figtree or the GOHS4.1.8 risk worksheet.</p>
+    <p style="font-size:12px;font-weight:700;margin-bottom:4px">Goal</p>
+    <p style="font-size:12px;line-height:1.6;margin-bottom:8px">To quantify how much each control reduces inherent risk, producing a defensible, auditable residual risk score.</p>
+    <p style="font-size:12px;font-weight:700;margin-bottom:4px">Compliance</p>
+    <p style="font-size:12px;line-height:1.6">Tool draws on barrier-management performance assessment principles (FARSI) and applies hierarchy-of-controls protection factors consistent with ISO 45002:2023 Cl 6.1.2.2 guidance. SFARP demonstration, hazard identification, consultation evidence, additional controls, and target risk are recorded in the parent risk assessment, not in this tool.</p>
+  </div>
+</div>
+
+<!-- ===================== TAB BAR ===================== -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('guide')">📋 User Guide</button>
+  <button class="tab-btn" onclick="showTab('calculator')">⚙️ Control Reduction Calculator</button>
+  <button class="tab-btn" onclick="showTab('reference')">📊 Reference Tables</button>
+  <button class="tab-btn" onclick="showTab('scoring')">🔍 FARSI Scoring Criteria</button>
+</div>
+
+<!-- =========================================================
+     TAB 1 — USER GUIDE
+     ========================================================= -->
+<div id="tab-guide" class="tab-panel active">
+
+  <div class="two-col">
+    <div>
+      <div class="card">
+        <h2>1. Purpose</h2>
+        <h3>Overview</h3>
+        <p>This workbook calculates the residual likelihood reduction achieved when controls are applied to a defined hazard. It supports the Inherent / Current staged approach endorsed by ISO 45002:2023 Cl 6.1.2.2 guidance. It is <strong>NOT</strong> a prescribed ISO 45001 / ISO 45002 method. Output is transferred to the parent risk assessment in Figtree or the GOHS4.1.8 risk worksheet.</p>
+        <h3>Goal</h3>
+        <p>To quantify how much each control reduces inherent risk, producing a defensible, auditable residual risk score.</p>
+        <h3>Compliance</h3>
+        <p>Tool draws on barrier-management performance assessment principles (FARSI) and applies hierarchy-of-controls protection factors consistent with ISO 45002:2023 Cl 6.1.2.2 guidance. SFARP demonstration, hazard identification, consultation evidence, additional controls, and target risk are recorded in the parent risk assessment, not in this tool.</p>
+      </div>
+
+      <div class="card">
+        <h2>2. Assessment Methods</h2>
+        <h3>FARSI Method (Quantitative – Detailed)</h3>
+        <table>
+          <tr><td><strong>What it is</strong></td><td>Scores 5 independent attributes: F–Functionality, A–Availability, R–Reliability, S–Survivability, I–Interaction. Each scored 1–5 on evidence.</td></tr>
+          <tr><td><strong>How it works</strong></td><td>Average of 5 scores → Effectiveness = (Score−1) ÷ 4. Score 5 = 100%; Score 1 = 0%.</td></tr>
+          <tr><td><strong>Evidence Required</strong></td><td>Functional testing, maintenance logs, historical performance data, stress testing, system integration testing. See FARSI Scoring Criteria tab.</td></tr>
+          <tr><td><strong>Key Advantage</strong></td><td>Identifies specific weaknesses. E.g., F=5, A=5, R=1, S=5, I=5 reveals a critical Reliability gap that Simple would miss.</td></tr>
+        </table>
+        <h3>Simple Method (Qualitative – Quick)</h3>
+        <table>
+          <tr><td><strong>What it is</strong></td><td>Single 1–5 rating based on overall professional judgement.</td></tr>
+          <tr><td><strong>How it works</strong></td><td>5=Highly Effective, 4=Effective, 3=Moderately Effective, 2=Partially Effective, 1=Not Effective. Same formula: (Score−1)/4.</td></tr>
+          <tr><td><strong>Evidence Required</strong></td><td>General assessment based on observation, documentation review, or expert opinion.</td></tr>
+          <tr><td><strong>Key Limitation</strong></td><td>May miss hidden weaknesses. Assessor may rate 4–5, overlooking specific attribute gaps.</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>5. Sequential Reduction Principle</h2>
+        <table>
+          <tr><td><strong>Principle</strong></td><td>Each control reduces risk from the <strong>residual level left by the prior control</strong>, NOT from the inherent level. This reflects real-world stacking of controls.</td></tr>
+          <tr><td><strong>Example</strong></td><td>Inherent L=4 → Control 1 (Eng, 75% eff) → Residual 2.2 → Control 2 (Admin, 50% eff) → Residual 1.76 → Final Risk = 1.76 × Consequence</td></tr>
+          <tr><td><strong>Consequence Stability</strong></td><td>Consequence remains stable unless a control physically limits the harm mechanism. Most controls reduce Likelihood only.</td></tr>
+          <tr><td><strong>Control Order</strong></td><td>Apply higher-hierarchy controls first (Elimination → Substitution → Engineering → Admin → PPE) for maximum cumulative reduction.</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>6. Calculation Formulas</h2>
+        <table>
+          <tr><td><strong>Effectiveness Multiplier</strong></td><td>Banded by score &nbsp;|&nbsp; ≥4.0=100% (High), 3.0–3.9=60% (Moderate), 2.0–2.9=30% (Low), &lt;2.0=10% (Very Low)</td></tr>
+          <tr><td><strong>Reduction Potential</strong></td><td>1 − Hierarchy Base Factor &nbsp;|&nbsp; Elimination 100%, Substitution 80%, Engineering 60%, Admin 40%, PPE 20%</td></tr>
+          <tr><td><strong>Effective Residual</strong></td><td>Base Factor + (Reduction Potential × (1 − Effectiveness Multiplier))</td></tr>
+          <tr><td><strong>Independence Combination</strong></td><td>If not independent of the prior control: use MIN(prior residual, this residual) once, applied to the likelihood that fed the prior control — does not compound</td></tr>
+          <tr><td><strong>Current Likelihood</strong></td><td>Prior Likelihood × Effective Residual (or combined residual, see above)</td></tr>
+          <tr><td><strong>Residual Likelihood Floor</strong></td><td>Current Likelihood cannot fall below Inherent Likelihood × 20% (general) or × 10–15% (ADI / high-consequence) across any non-Elimination control chain</td></tr>
+          <tr><td><strong>Current Risk</strong></td><td>Current Likelihood × Inherent Consequence (fractional – internal use only)</td></tr>
+          <tr><td><strong>Rounded Current Risk</strong></td><td>Round(Current Likelihood, nearest integer, floor 1) × Consequence</td></tr>
+          <tr><td><strong>% Reduction</strong></td><td>(Inherent Risk − Current Risk) ÷ Inherent Risk × 100</td></tr>
+        </table>
+        <p style="margin-top:8px;font-size:11px;color:#555">Effectiveness banding, Residual Likelihood Floor, and Independence Combination implement the FARSI Reduction Factors model — see Mandatory Model Safeguards on the Reference Tables tab.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2>3. When to Use Each Method</h2>
+        <table>
+          <thead><tr><th>Risk Level / Scenario</th><th>Recommended Method</th></tr></thead>
+          <tbody>
+            <tr><td>Extreme Risk (15–25)</td><td><strong>FARSI – Mandatory</strong> detailed assessment with full evidence</td></tr>
+            <tr><td>High Risk (10–14)</td><td><strong>FARSI – Strongly recommended</strong> for audit trail</td></tr>
+            <tr><td>Medium Risk (5–9)</td><td>FARSI preferred; Simple acceptable with follow-up review planned</td></tr>
+            <tr><td>Low Risk (1–4)</td><td>Simple – acceptable for routine, well-established controls</td></tr>
+            <tr><td>Safety-Critical Control</td><td><strong>FARSI – Always</strong>, regardless of risk level</td></tr>
+            <tr><td>New or Modified Control</td><td><strong>FARSI – Initial</strong> assessment to establish baseline</td></tr>
+            <tr><td>Audit / Compliance Review</td><td>FARSI – Documented evidence for audit, MAP Safety Case, or regulator</td></tr>
+            <tr><td>Control Discrepancy / Dispute</td><td>FARSI – Quantitative assessment resolves subjective disagreements</td></tr>
+            <tr><td>Rapid Initial Screening</td><td>Simple – acceptable for quick triage with detailed follow-up</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>4. How to Use This Workbook — Step by Step</h2>
+        <ol class="step-list">
+          <li><strong>Define Hazard:</strong> Go to the Control Reduction Calculator tab. Enter hazard/risk description. Select Inherent Likelihood (1–5) and Consequence (1–5). Inherent Score and Risk Rating calculate automatically.</li>
+          <li><strong>Add Control ID:</strong> Click "+ Add Control Row". Enter a unique Control ID (e.g., CTRL-001, RC2342).</li>
+          <li><strong>Select Control Type:</strong> Choose from dropdown — Elimination (0.0), Substitution (0.2), Engineering (0.4), Admin (0.6), PPE (0.8). This sets the base residual factor.</li>
+          <li><strong>Select Method:</strong> Choose "FARSI" for detailed or "Simple" for quick rating.</li>
+          <li><strong>If FARSI:</strong> Score each attribute F, A, R, S, I from 1–5 using the FARSI Scoring Criteria tab. Score on evidence, not assumption.</li>
+          <li><strong>If Simple:</strong> Enter single rating 1–5 in the Simple Rating field.</li>
+          <li><strong>Review Results:</strong> Check Effectiveness %, Effective Residual, Current Likelihood, Current Risk, Risk Rating, and % Reduction — all calculated automatically.</li>
+          <li><strong>Add More Controls:</strong> Repeat Steps 2–7. Each control reduces risk sequentially from the prior level.</li>
+          <li><strong>Review Summary:</strong> Check the Summary section for Inherent vs Current Risk, including ROUNDED integer outputs for Figtree transfer.</li>
+          <li><strong>Complete Traceability:</strong> Fill in Calculation ID, Parent RA ID, Figtree Hazard ID, Assessor, Date, Reviewer before transferring outputs.</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <h2>7. Reference Sheets</h2>
+        <table>
+          <tr><td><strong>FARSI Scoring Criteria tab</strong></td><td>Detailed criteria for scoring each attribute (F, A, R, S, I). Definitions, key questions, verification methods, scoring anchors (1=Poor, 3=Adequate, 5=Excellent).</td></tr>
+          <tr><td><strong>Reference Tables tab</strong></td><td>Control Hierarchy Weights, Risk Score Ratings (1–25), Adjusted Likelihood Guide, Effectiveness Scaling Bands, Mandatory Model Safeguards, 5×5 Risk Matrix with WHS Act definitions.</td></tr>
+          <tr><td><strong>Control Reduction Calculator tab</strong></td><td>Main working area. Enter hazards, controls, and scores. View effectiveness, residual factors, current risk, and rounded integer outputs for Figtree.</td></tr>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>8. Best Practices &amp; Warnings</h2>
+        <div class="two-col">
+          <div>
+            <h3>✅ DO</h3>
+            <ul>
+              <li>Always score on <strong>documented evidence</strong>, not assumptions. If evidence unavailable, score conservatively and note the gap.</li>
+              <li>Apply higher-hierarchy controls first for maximum cumulative reduction.</li>
+              <li>Watch for attribute variance — one low score (e.g., R=1) reveals a specific weakness.</li>
+              <li>Document rationale for each score, especially for critical risks.</li>
+              <li>Use a separate calculation for each hazard.</li>
+              <li>Re-assess controls after incidents, near-misses, or process changes.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>⚠️ WARNING</h3>
+            <ul>
+              <li>Do <strong>NOT</strong> assume effectiveness because a control exists — verify through inspection, testing, or performance data.</li>
+              <li>Do <strong>NOT</strong> mix FARSI and Simple for a single control.</li>
+              <li>Do <strong>NOT</strong> transfer raw fractional Current Likelihood to Figtree — use the ROUNDED integer.</li>
+              <li>Do <strong>NOT</strong> cite this calculation as SFARP — SFARP belongs in the parent RA.</li>
+              <li>Where controls share a failure mode, record in the Independence Check field and treat as composite.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Methodology Notes</h2>
+        <p><strong>Status of formula:</strong> Effectiveness = (Score−1)/4 and multiplicative residual formulas are calculation aids. NOT prescribed by ISO 45001:2018, ISO 45002:2023, or ISO 31000:2018. ISO 45002:2023 Cl 6.1.2.2 endorses the Inherent / Current / Target staged approach.</p>
+        <p style="margin-top:6px"><strong>Assumption 1 – Independence:</strong> Sequential multiplicative reduction assumes controls fail independently. Where two controls share a failure mode, record in Independence Check and treat as a composite control.</p>
+        <p style="margin-top:6px"><strong>Assumption 2 – Hierarchy Compounding:</strong> Validate against historical incident data before using calculated Current Risk as basis for a band change.</p>
+        <p style="margin-top:6px"><strong>Assumption 3 – Consequence Stability:</strong> Consequence remains stable unless a control physically limits the harm mechanism (e.g., fall arrest reduces fatal fall to broken bone).</p>
+        <p style="margin-top:6px"><strong>Assumption 4 – Continuous Likelihood:</strong> Calculation produces fractional Current Likelihood (e.g., 1.76). The GOHS4.1.8 risk matrix uses integer likelihood (1–5). Round to nearest integer — floor at 1 (never report 0).</p>
+        <p style="margin-top:6px"><strong>Limitations:</strong> This tool does not assess hazards, identify causes, document consequence justifications, prescribe additional controls, set target risk, or generate the SFARP statement. These belong in the parent risk assessment.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Output Transfer to Figtree or GOHS4.1.8 Risk Worksheet</h2>
+    <div class="two-col">
+      <div>
+        <h3>Mandatory Step</h3>
+        <p>Every completed calculation must be linked to a parent risk assessment record. Populate the traceability fields (Calculation ID, Parent RA ID, Figtree Hazard ID, Assessor, Date, Reviewer) before transfer.</p>
+        <h3>What to Transfer</h3>
+        <p>Transfer the <strong>ROUNDED Current Likelihood</strong> (integer 1–5), the <strong>Consequence</strong> (integer 1–5), and the resulting <strong>Current Risk band</strong> into Figtree or the GOHS4.1.8 risk worksheet.</p>
+      </div>
+      <div>
+        <h3>What NOT to Transfer</h3>
+        <ul>
+          <li>Do NOT transfer the raw fractional Current Likelihood.</li>
+          <li>Do NOT cite the calculated Current Risk as the SFARP demonstration. SFARP sits in the parent RA SFARP Statement field.</li>
+        </ul>
+        <h3>Audit Trail</h3>
+        <p>Save a completed copy of the calculation as evidence linked to the parent RA. Retain per GOHS document retention requirements.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================
+     TAB 2 — CONTROL REDUCTION CALCULATOR
+     ========================================================= -->
+<div id="tab-calculator" class="tab-panel">
+
+  <!-- Hazard Definition -->
+  <div class="calc-card" id="step1Card">
+    <h2>⬛ Step 1 — Hazard &amp; Risk Definition</h2>
+    <div class="hazard-grid">
+      <div class="form-group">
+        <label>Hazard / Risk Description</label>
+        <input type="text" id="hazardDesc" placeholder="Describe the hazard or risk event…" oninput="calculate()">
+      </div>
+      <div class="form-group">
+        <label title="1=Rare │ 2=Unlikely │ 3=Possible │ 4=Likely │ 5=Almost Certain">Inherent Likelihood (1–5) ⓘ</label>
+        <select id="inherentL" onchange="calculate()">
+          <option value="">Select…</option>
+          <option value="1">1 – Rare</option>
+          <option value="2">2 – Unlikely</option>
+          <option value="3">3 – Possible</option>
+          <option value="4">4 – Likely</option>
+          <option value="5">5 – Almost Certain</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label title="1=Insignificant │ 2=Minor │ 3=Moderate │ 4=Serious │ 5=Critical">Inherent Consequence (1–5) ⓘ</label>
+        <select id="inherentC" onchange="calculate()">
+          <option value="">Select…</option>
+          <option value="1">1 – Insignificant</option>
+          <option value="2">2 – Minor</option>
+          <option value="3">3 – Moderate</option>
+          <option value="4">4 – Serious</option>
+          <option value="5">5 – Critical</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Inherent Risk Score</label>
+        <div class="out" id="iScore">–</div>
+      </div>
+      <div class="form-group">
+        <label>Inherent Risk Rating</label>
+        <div class="out" id="iRating">–</div>
+      </div>
+      <div class="form-group">
+        <label title="Floors the cumulative residual likelihood per FARSI Reduction Factors Safeguard 1">ADI / High-Consequence Hazard? ⓘ</label>
+        <select id="isADI" onchange="toggleADIFloor();calculate()">
+          <option value="0">No — General Hazard (floor 20%)</option>
+          <option value="1">Yes — ADI / High-Consequence</option>
+        </select>
+      </div>
+      <div class="form-group" id="adiFloorGroup" style="display:none">
+        <label title="10–15% range per FARSI Reduction Factors guidance">Residual Likelihood Floor (%)</label>
+        <input type="number" id="adiFloorPct" value="15" min="10" max="15" step="1" oninput="calculate()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls Table -->
+  <div class="calc-card">
+    <h2>⬛ Steps 2–7 — Control Assessment</h2>
+    <div class="warn-box">
+      <strong>⚠️ Sequential Reduction:</strong> Each control reduces risk from the prior residual level. Apply higher-hierarchy controls first. Score on documented evidence only — not assumption.
+    </div>
+    <div class="warn-box" id="orderWarning" style="display:none;background:#ffe9e0;border-left-color:#C00000">
+      <strong>⚠️ Hierarchy Order:</strong> Controls are not in top-down order (Elimination → Substitution → Engineering → Admin → PPE). Calculation still proceeds, but reorder rows for a defensible audit trail per FARSI Reduction Factors guidance.
+    </div>
+    <div class="tbl-wrap">
+      <table class="ctrl-tbl" id="ctrlTable">
+        <thead>
+          <tr>
+            <th rowspan="2" style="min-width:28px">#</th>
+            <th colspan="5" class="grp-hdr">Control Inputs</th>
+            <th colspan="5" class="grp-hdr">FARSI Scores (1–5)</th>
+            <th colspan="8" class="grp-hdr">Calculated Effectiveness</th>
+            <th colspan="5" class="grp-hdr">Sequential Risk Reduction</th>
+            <th colspan="3" class="grp-hdr">Integer Output (Figtree)</th>
+            <th rowspan="2" style="min-width:170px" title="Uncheck if not independent of the prior control — combines as one control using the lower residual (Safeguard 3)">Independence Check</th>
+            <th rowspan="2" class="no-print" style="min-width:50px">Remove</th>
+          </tr>
+          <tr>
+            <th style="min-width:80px" title="Unique identifier">Control ID</th>
+            <th style="min-width:140px">Control Type</th>
+            <th style="min-width:110px">Method</th>
+            <th style="min-width:70px" title="1–5 for Simple method">Simple Rating</th>
+            <th style="min-width:100px">Notes</th>
+            <th style="min-width:36px" title="Functionality 1–5">F</th>
+            <th style="min-width:36px" title="Availability 1–5">A</th>
+            <th style="min-width:36px" title="Reliability 1–5">R</th>
+            <th style="min-width:36px" title="Survivability 1–5">S</th>
+            <th style="min-width:36px" title="Interaction 1–5">I</th>
+            <th class="col-hide" title="From control type selection">Base Factor</th>
+            <th class="col-hide" title="Average of F,A,R,S,I">FARSI Score</th>
+            <th style="min-width:72px" title="Banded: FARSI≥4.0=High(100%), 3.0–3.9=Moderate(60%), 2.0–2.9=Low(30%), &lt;2.0=Very Low(10%)">FARSI Eff %</th>
+            <th class="col-hide" title="1 − Base Factor">Reduction Potential</th>
+            <th class="col-hide" title="Base Factor + (Reduction Potential × (1 − FARSI Eff))">FARSI Residual</th>
+            <th class="col-hide" title="Banded: Rating≥4.0=High(100%), 3.0–3.9=Moderate(60%), 2.0–2.9=Low(30%), &lt;2.0=Very Low(10%)">Simple Eff %</th>
+            <th class="col-hide" title="Base Factor + (Reduction Potential × (1 − Simple Eff))">Simple Residual</th>
+            <th style="min-width:80px" title="Residual used in calculation (determined by selected method)">Final Residual</th>
+            <th style="min-width:70px" title="Likelihood feeding into this control">Prior Likelihood</th>
+            <th style="min-width:90px" title="Prior Likelihood × Final Residual">Current Likelihood</th>
+            <th class="col-hide" title="Current Likelihood × Inherent Consequence (fractional)">Current Risk</th>
+            <th class="col-hide">Risk Rating</th>
+            <th class="col-hide" title="(Inherent Risk − Current Risk) ÷ Inherent Risk">% Reduction</th>
+            <th style="min-width:60px" title="Round(Current Likelihood) — floor at 1">Rounded L</th>
+            <th style="min-width:72px" title="Rounded L × Consequence">Rounded Risk</th>
+            <th style="min-width:72px" title="Risk rating for Rounded Risk — use this for Figtree">Risk Rating ★</th>
+          </tr>
+        </thead>
+        <tbody id="ctrlBody">
+          <!-- rows injected by JS -->
+        </tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap" class="no-print">
+      <button class="btn btn-primary" onclick="addRow()">+ Add Control Row</button>
+      <button class="btn btn-success" onclick="exportCSV()">⬇ Export CSV</button>
+      <button class="btn btn-warn" onclick="clearAll()" title="Clear all control rows and hazard inputs">🗑 Clear All</button>
+      <button class="btn btn-primary" onclick="printReport()">🖨 Print to PDF</button>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="calc-card">
+    <h2>⬛ Step 8 — Summary: Inherent vs Current Risk</h2>
+    <div class="summary-grid">
+      <div class="sum-card" id="sumCard1">
+        <div class="lbl">Inherent Risk Score</div>
+        <div class="val" id="sumIScore">–</div>
+        <div class="sub" id="sumIRating">Before any controls applied</div>
+      </div>
+      <div class="sum-card" id="sumCard2">
+        <div class="lbl">Current Risk Score (Rounded — for Figtree)</div>
+        <div class="val" id="sumCScore">–</div>
+        <div class="sub" id="sumCRating">After all controls</div>
+      </div>
+      <div class="sum-card rating-card" id="sumCard3">
+        <div class="lbl">Current Risk Rating</div>
+        <div class="val" id="sumCRatingVal">–</div>
+        <div class="sub" id="sumCRatingSub">After all controls implemented</div>
+      </div>
+      <div class="sum-card">
+        <div class="lbl">Total Risk Reduction</div>
+        <div class="val" id="sumPct">–</div>
+        <div id="sumBar" style="margin-top:8px"><div class="reduction-bar"><div class="reduction-fill" id="sumFill" style="width:0%"></div></div></div>
+        <div class="sub">% reduction from inherent risk</div>
+      </div>
+    </div>
+    <div class="info-box">
+      <strong>★ Transfer to Figtree:</strong> Use the <strong>Rounded Current Likelihood</strong> × Consequence = <strong>Rounded Risk Score</strong> and the corresponding <strong>Risk Rating</strong> (★ column). Do NOT transfer raw fractional values. Do NOT cite this calculation as SFARP.
+    </div>
+  </div>
+
+  <!-- Traceability -->
+  <div class="calc-card" id="traceCard">
+    <h2>⬛ Step 9 — Output Traceability</h2>
+    <div class="trace-grid">
+      <div class="form-group">
+        <label>Calculation ID</label>
+        <input type="text" id="tCalcId" placeholder="e.g., CALC-2025-001">
+      </div>
+      <div class="form-group">
+        <label>Parent RA ID</label>
+        <input type="text" id="tParentRA" placeholder="e.g., RA-2025-045">
+      </div>
+      <div class="form-group">
+        <label>Figtree Hazard ID</label>
+        <input type="text" id="tFigtree" placeholder="e.g., HAZ-0123">
+      </div>
+      <div class="form-group">
+        <label>Assessor</label>
+        <input type="text" id="tAssessor" placeholder="Full name">
+      </div>
+      <div class="form-group">
+        <label>Assessment Date</label>
+        <input type="text" id="tDate" placeholder="DD/MM/YYYY">
+      </div>
+      <div class="form-group">
+        <label>Reviewed By</label>
+        <input type="text" id="tReviewer" placeholder="Full name">
+      </div>
+    </div>
+    <div style="margin-top:10px" class="form-group">
+      <label>Additional Notes / Independence Check Summary / Methodology Justifications</label>
+      <textarea id="tNotes" rows="3" placeholder="Record any common-cause failure notes, control ordering rationale, evidence references, or review comments…" style="width:100%;resize:vertical"></textarea>
+    </div>
+    <div class="warn-box" style="margin-top:10px">
+      <strong>Transfer Guidance:</strong>
+      (1) Confirm all traceability fields populated. &nbsp;
+      (2) Transfer ROUNDED Current Likelihood, Consequence, Rounded Risk Score &amp; Risk Rating (★) to parent record. &nbsp;
+      (3) Do NOT transfer raw fractional Current Likelihood or Current Risk. &nbsp;
+      (4) Do NOT cite as SFARP. &nbsp;
+      (5) Record common-cause failures in Independence Check column. &nbsp;
+      (6) Save a dated copy as evidence per GOHS document retention requirements.
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================
+     TAB 3 — REFERENCE TABLES
+     ========================================================= -->
+<div id="tab-reference" class="tab-panel">
+  <div class="info-box" style="margin-bottom:14px">
+    Risk matrix per GOHS4.1.8 v7. Adjusted Likelihood Guide (fractional 0.0–5.0) is used internally by the calculation engine; round to integer (1–5) before transfer to Figtree. Effectiveness scaling, the Residual Likelihood Floor, and the Independence combination rule follow the FARSI Reduction Factors model — see Mandatory Model Safeguards below.
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="card">
+        <h2>Control Hierarchy Weights</h2>
+        <table>
+          <thead><tr><th>Control Type</th><th>Base Factor</th><th>Reduction Potential</th><th>Max Risk Reduction</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Elimination</strong></td><td>0.0</td><td>1.0</td><td>100%</td></tr>
+            <tr><td><strong>Substitution</strong></td><td>0.2</td><td>0.8</td><td>80%</td></tr>
+            <tr><td><strong>Engineering</strong></td><td>0.4</td><td>0.6</td><td>60%</td></tr>
+            <tr><td><strong>Administrative (Admin)</strong></td><td>0.6</td><td>0.4</td><td>40%</td></tr>
+            <tr><td><strong>PPE</strong></td><td>0.8</td><td>0.2</td><td>20%</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:8px;font-size:11px;color:#555">Effective Residual = Base Factor + (Reduction Potential × (1 − Effectiveness))</p>
+      </div>
+
+      <div class="card">
+        <h2>Risk Score Ratings</h2>
+        <table>
+          <thead><tr><th>Score Range</th><th>Risk Rating</th><th>Response Requirement</th></tr></thead>
+          <tbody>
+            <tr class="risk-extreme"><td>15 – 25</td><td>EXTREME</td><td>Immediate action — must not proceed until risk reduced</td></tr>
+            <tr class="risk-high"><td>10 – 14</td><td>HIGH</td><td>Senior management action — significant resources needed</td></tr>
+            <tr class="risk-medium"><td>5 – 9</td><td>MEDIUM</td><td>Management responsibility specified — manage and monitor</td></tr>
+            <tr class="risk-low"><td>1 – 4</td><td>LOW</td><td>Manage by routine procedures — monitor for change</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Adjusted Likelihood Guide</h2>
+        <table>
+          <thead><tr><th>Score Range (Fractional)</th><th>Interpretation</th><th>Action Required</th></tr></thead>
+          <tbody>
+            <tr><td>0.0 – 0.5</td><td>Very Low Likelihood</td><td>Control highly effective; monitor and maintain</td></tr>
+            <tr><td>0.5 – 1.0</td><td>Low Likelihood</td><td>Control effective; standard review cycle</td></tr>
+            <tr><td>1.0 – 2.0</td><td>Reduced Likelihood</td><td>Control working; verify ongoing effectiveness</td></tr>
+            <tr><td>2.0 – 3.0</td><td>Moderate Likelihood</td><td>Control partially effective; consider improvements</td></tr>
+            <tr><td>3.0 – 5.0</td><td>High Likelihood</td><td>Control inadequate; urgent review required</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Effectiveness Scaling Bands</h2>
+        <table>
+          <thead><tr><th>Band</th><th>FARSI / Simple Score</th><th>Effectiveness Multiplier</th></tr></thead>
+          <tbody>
+            <tr><td style="font-weight:700;color:#375623">High</td><td>4.0 – 5.0 (robust, reliable, independent)</td><td style="text-align:center;font-weight:700;color:#375623">100%</td></tr>
+            <tr><td style="font-weight:700;color:#2E5496">Moderate</td><td>3.0 – 3.9 (works, but with limitations)</td><td style="text-align:center;font-weight:700;color:#2E5496">60%</td></tr>
+            <tr><td style="font-weight:700;color:#c07a00">Low</td><td>2.0 – 2.9 (weaknesses, reliance, gaps)</td><td style="text-align:center;font-weight:700;color:#c07a00">30%</td></tr>
+            <tr><td style="font-weight:700;color:#C00000">Very Low</td><td>&lt; 2.0 (poor or unverified control)</td><td style="text-align:center;font-weight:700;color:#C00000">10%</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:8px;font-size:11px;color:#555">Both FARSI &amp; Simple use the same banded scaling. Replaces the prior continuous (Score−1)/4 formula. Per FARSI Reduction Factors guidance — separates "what the control type can do" (Hierarchy Cap) from "how well it actually does it" (Effectiveness Multiplier).</p>
+      </div>
+
+      <div class="card">
+        <h2>Combined Reduction Values (Hierarchy Cap × Effectiveness Multiplier)</h2>
+        <table>
+          <thead><tr><th>Hierarchy</th><th>Cap</th><th>High ×1.00</th><th>Moderate ×0.60</th><th>Low ×0.30</th><th>Very Low ×0.10</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Elimination</strong></td><td>100%</td><td colspan="4" style="color:#888;font-style:italic;text-align:center">N/A — hazard removed regardless of band</td></tr>
+            <tr><td><strong>Substitution</strong></td><td>80%</td><td>80%</td><td>48%</td><td>24%</td><td>8%</td></tr>
+            <tr><td><strong>Engineering</strong></td><td>60%</td><td>60%</td><td>36%</td><td>18%</td><td>6%</td></tr>
+            <tr><td><strong>Administrative</strong></td><td>40%</td><td>40%</td><td>24%</td><td>12%</td><td>4%</td></tr>
+            <tr><td><strong>PPE</strong></td><td>20%</td><td>20%</td><td>12%</td><td>6%</td><td>2%</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:8px;font-size:11px;color:#555">Applied Likelihood Reduction = Hierarchy Cap × Effectiveness Multiplier. Quick-reference only — the calculator derives this automatically per control row via the Effective Residual formula.</p>
+      </div>
+
+      <div class="card">
+        <h2>Mandatory Model Safeguards</h2>
+        <table>
+          <tr><td style="white-space:nowrap"><strong>1. Residual Likelihood Floor</strong></td><td>No single non-Elimination control (or combination) may reduce likelihood below 20% of inherent likelihood (general hazards) or 10–15% of inherent likelihood (ADI / high-consequence hazards). Prevents one control declaring residual risk "acceptable" on its own. Set the hazard's ADI flag and floor % in Step 1 — Hazard &amp; Risk Definition.</td></tr>
+          <tr><td style="white-space:nowrap"><strong>2. Sequential Application Only</strong></td><td>Apply controls top-down: Elimination → Substitution → Engineering → Admin → PPE. Each reduction acts on the remaining residual likelihood, not the inherent likelihood. The calculator shows a warning banner (non-blocking) if rows are entered out of order.</td></tr>
+          <tr><td style="white-space:nowrap"><strong>3. Independence Check</strong></td><td>If a control is not independent of the prior control (shares a common-cause failure mode), they are treated as one combined control: the calculator uses the lower (more protective) residual once, instead of multiplying both — avoiding artificial stacking credit. Uncheck "Independent" on the control row and document the rationale in the note field.</td></tr>
+        </table>
+        <p style="margin-top:8px;font-size:11px;color:#555">Source: FARSI Reduction Factors — Hierarchy of Control Likelihood Reduction Factors (model inputs), internal guidance note, applied 2026-06-21.</p>
+      </div>
+
+      <div class="card">
+        <h2>FARSI Accuracy Advantage — Example</h2>
+        <p style="margin-bottom:8px;font-size:11.5px"><em>Scenario: Engineering control appears effective but has poor Reliability (intermittent failures)</em></p>
+        <table>
+          <thead><tr><th>Attribute</th><th>F</th><th>A</th><th>R</th><th>S</th><th>I</th><th>Avg Score</th><th>Effectiveness</th></tr></thead>
+          <tbody>
+            <tr><td><strong>FARSI Scores</strong></td><td>5</td><td>5</td><td style="background:#ffdddd;font-weight:700;color:#C00000">1</td><td>5</td><td>5</td><td>4.2</td><td>100% (High band)</td></tr>
+            <tr><td><strong>Simple Estimate</strong></td><td colspan="5" style="color:#888;font-style:italic">Assessor rates "mostly good"</td><td>4 or 5</td><td>100% (High band)</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:8px;font-size:11.5px">
+          <p>⚠️ FARSI reveals the Reliability weakness (R=1) that could cause control failure during critical moments.</p>
+          <p>⚠️ Simple rating misses this — assessor sees 'mostly good' and rates 4 or 5, hiding the intermittent failure risk.</p>
+          <p>✅ FARSI drives targeted improvement: focus maintenance on Reliability to raise R from 1 to 4+.</p>
+          <p>⚠️ <strong>Banding caveat:</strong> the AVERAGE score (4.2) still falls in the "High" band (100%) under the banded model — banding the average can mask a single poor attribute. Always check individual F/A/R/S/I scores against the FARSI Scoring Criteria tab before accepting a High/Moderate band; a score of 1–2 on any single attribute should trigger manual override to a lower band, regardless of the average.</p>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2>5×5 Risk Matrix</h2>
+        <p style="font-size:11px;margin-bottom:10px">Risk matrix per GOHS4.1.8 v7. Use integer likelihood (1–5) for matrix lookup.</p>
+        <table class="risk-matrix">
+          <thead>
+            <tr>
+              <th class="row-hdr">Likelihood ↓ / Consequence →</th>
+              <th>1<br>Insignificant</th>
+              <th>2<br>Minor</th>
+              <th>3<br>Moderate</th>
+              <th>4<br>Serious</th>
+              <th>5<br>Critical</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="row-hdr">5 – Almost Certain<br><small>Expected in most circumstances; ~once in 3 months</small></td>
+              <td class="risk-medium">5</td>
+              <td class="risk-high">10</td>
+              <td class="risk-extreme">15</td>
+              <td class="risk-extreme">20</td>
+              <td class="risk-extreme">25</td>
+            </tr>
+            <tr>
+              <td class="row-hdr">4 – Likely<br><small>Strong possibility; ~once in a year</small></td>
+              <td class="risk-low">4</td>
+              <td class="risk-medium">8</td>
+              <td class="risk-high">12</td>
+              <td class="risk-extreme">16</td>
+              <td class="risk-extreme">20</td>
+            </tr>
+            <tr>
+              <td class="row-hdr">3 – Possible<br><small>May occur at some time; ~once in 2 years</small></td>
+              <td class="risk-low">3</td>
+              <td class="risk-medium">6</td>
+              <td class="risk-medium">9</td>
+              <td class="risk-high">12</td>
+              <td class="risk-extreme">15</td>
+            </tr>
+            <tr>
+              <td class="row-hdr">2 – Unlikely<br><small>Slight possibility; ~once in 5 years</small></td>
+              <td class="risk-low">2</td>
+              <td class="risk-low">4</td>
+              <td class="risk-medium">6</td>
+              <td class="risk-medium">8</td>
+              <td class="risk-high">10</td>
+            </tr>
+            <tr>
+              <td class="row-hdr">1 – Rare<br><small>Exceptional circumstances; ~once in 10 years</small></td>
+              <td class="risk-low">1</td>
+              <td class="risk-low">2</td>
+              <td class="risk-low">3</td>
+              <td class="risk-low">4</td>
+              <td class="risk-medium">5</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="legend">
+          <span class="chip risk-extreme">■ Extreme (15–25)</span>
+          <span class="chip risk-high">■ High (10–14)</span>
+          <span class="chip risk-medium">■ Medium (5–9)</span>
+          <span class="chip risk-low">■ Low (1–4)</span>
+        </div>
+        <p style="font-size:11px;margin-top:8px;color:#555">Source: WHS Act 2011 (Qld) ss35–39. Serious = serious injury/illness or dangerous incident. Critical = single or multiple fatalities / catastrophic loss.</p>
+      </div>
+
+      <div class="card">
+        <h2>Control Effectiveness Rating Summary</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Rating</th>
+              <th>Label</th>
+              <th>Residual Risk</th>
+              <th>Indicative Band Reduction</th>
+              <th>Evidence Required</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="text-align:center;font-weight:700">5</td>
+              <td>Highly Effective</td>
+              <td>Negligible</td>
+              <td>Up to 3 band steps</td>
+              <td>Independent engineering certification, automated monitoring data, predictive maintenance records. Hazard eliminated or minimised to SFARP — does not rely on human behaviour.</td>
+            </tr>
+            <tr>
+              <td style="text-align:center;font-weight:700">4</td>
+              <td>Effective</td>
+              <td>Low</td>
+              <td>2–3 band steps</td>
+              <td>Inspection and test reports, calibration records, audit outcomes, preventive maintenance records. Human involvement limited to supervision or verification.</td>
+            </tr>
+            <tr>
+              <td style="text-align:center;font-weight:700">3</td>
+              <td>Moderately Effective</td>
+              <td>Moderate</td>
+              <td>1–2 band steps</td>
+              <td>Procedures, training records, toolbox talks, monitoring logs, inspection or audit reports. Relies on correct human action or periodic intervention.</td>
+            </tr>
+            <tr>
+              <td style="text-align:center;font-weight:700">2</td>
+              <td>Partially Effective</td>
+              <td>High</td>
+              <td>1 band step</td>
+              <td>Incident records, incomplete inspections, audit findings identifying control weaknesses. Predominantly administrative and dependent on compliance.</td>
+            </tr>
+            <tr>
+              <td style="text-align:center;font-weight:700">1</td>
+              <td>Not Effective</td>
+              <td>Extreme</td>
+              <td>No reduction</td>
+              <td>Absence of procedures, training or inspection records, unmanaged incident history. Control measures absent, inadequate, or not implemented.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="margin-top:8px;font-size:11px;color:#555">NOTE: Indicative Band Reduction column is a qualitative cross-reference only. The Control Reduction Calculator uses continuous likelihood reduction. Round to integer (1–5) before transfer to Figtree.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================
+     TAB 4 — FARSI SCORING CRITERIA
+     ========================================================= -->
+<div id="tab-scoring" class="tab-panel">
+
+  <div class="info-box" style="margin-bottom:14px">
+    Use these criteria to score each FARSI attribute (Functionality, Availability, Reliability, Survivability, Interaction). Score on <strong>documented evidence</strong>, not assumption. If evidence is unavailable, score conservatively (1–2) and note the gap in the Independence Check or Notes field.
+  </div>
+
+  <div class="card">
+    <h2>Overview — The FARSI Framework</h2>
+    <p>The FARSI control effectiveness process is a structured framework used in safety risk management to define, measure, and verify the performance of safety-critical controls. It ensures that controls are not only present but effective, reliable, and auditable throughout their lifecycle. It transforms vague risk reduction into structured, measurable, and verifiable performance standards.</p>
+    <table style="margin-top:10px">
+      <thead><tr><th>Attribute</th><th>Letter</th><th>Core Question</th><th>Verification Methods</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Functionality</strong></td><td style="text-align:center;font-weight:700;font-size:16px">F</td><td>Does the control perform its intended safety-critical function under expected conditions?</td><td>Functional testing, design documentation, simulation/scenario walkthroughs</td></tr>
+        <tr><td><strong>Availability</strong></td><td style="text-align:center;font-weight:700;font-size:16px">A</td><td>Is the control accessible and operational when needed, especially during emergencies?</td><td>Maintenance logs, inspection schedules, real-time system status checks</td></tr>
+        <tr><td><strong>Reliability</strong></td><td style="text-align:center;font-weight:700;font-size:16px">R</td><td>Does the control consistently perform its function over time and across conditions?</td><td>Historical performance data, reliability engineering analysis, incident reports</td></tr>
+        <tr><td><strong>Survivability</strong></td><td style="text-align:center;font-weight:700;font-size:16px">S</td><td>Can the control remain functional during and after adverse conditions (fire, explosion, flood)?</td><td>Stress testing, environmental qualification, fire and blast rating assessments</td></tr>
+        <tr><td><strong>Interaction</strong></td><td style="text-align:center;font-weight:700;font-size:16px">I</td><td>Does the control integrate effectively with other systems, controls, and human operators?</td><td>System integration testing, HMI reviews, cross-control dependency mapping</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- F — Functionality -->
+  <div class="calc-card">
+    <h2>F — Functionality</h2>
+    <p style="font-size:12px;margin-bottom:8px"><strong>Definition:</strong> The control must perform its intended safety-critical function under expected conditions.</p>
+    <p style="font-size:12px;margin-bottom:4px"><strong>Key Questions:</strong> Does the control meet its design intent? Is it capable of preventing or mitigating the hazard? Are failure modes understood and accounted for?</p>
+    <p style="font-size:12px;margin-bottom:8px"><strong>Example:</strong> A gas detector must reliably trigger alarms when thresholds are exceeded — not just exist in the system.</p>
+    <table class="farsi-crit">
+      <thead><tr><th style="width:60px;text-align:center">Score</th><th style="width:160px">Level</th><th>Criteria / Evidence Indicators</th></tr></thead>
+      <tbody>
+        <tr><td style="text-align:center" class="score-1">1</td><td>Poor / Non-compliant</td><td>Control does not perform intended safety function or is misconfigured. No functional test records exist. Design intent cannot be verified.</td></tr>
+        <tr><td style="text-align:center" class="score-3">2</td><td>Below Adequate</td><td>Control performs function only under ideal or limited conditions. Significant gaps between design intent and actual performance documented.</td></tr>
+        <tr><td style="text-align:center" class="score-3">3</td><td>Adequate / Partially Compliant</td><td>Control performs function inconsistently or under limited conditions. Some functional test records available. Known gaps exist.</td></tr>
+        <tr><td style="text-align:center" class="score-5">4</td><td>Good</td><td>Control performs function consistently with minor gaps or conditions. Functional test records current. Minor design limitations identified and managed.</td></tr>
+        <tr><td style="text-align:center" class="score-5">5</td><td>Excellent / Fully Compliant</td><td>Control reliably performs intended safety function under all expected conditions. Full functional certification, automated monitoring data, and predictive maintenance records current.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- A — Availability -->
+  <div class="calc-card">
+    <h2>A — Availability</h2>
+    <p style="font-size:12px;margin-bottom:8px"><strong>Definition:</strong> The control must be accessible and operational when needed, especially during critical phases or emergencies.</p>
+    <p style="font-size:12px;margin-bottom:4px"><strong>Key Questions:</strong> Is the control online and active? Are there any known outages or bypasses? Is it maintained and inspected regularly?</p>
+    <p style="font-size:12px;margin-bottom:8px"><strong>Example:</strong> A fire suppression system must be charged and ready — not under maintenance or disabled.</p>
+    <table class="farsi-crit">
+      <thead><tr><th style="width:60px;text-align:center">Score</th><th style="width:160px">Level</th><th>Criteria / Evidence Indicators</th></tr></thead>
+      <tbody>
+        <tr><td style="text-align:center" class="score-1">1</td><td>Poor</td><td>Control is unavailable, bypassed, or frequently offline. No maintenance schedule. Multiple known outages without resolution.</td></tr>
+        <tr><td style="text-align:center" class="score-3">2</td><td>Below Adequate</td><td>Control is often unavailable during peak risk periods. Maintenance schedule exists but compliance poor. Bypasses documented but not managed.</td></tr>
+        <tr><td style="text-align:center" class="score-3">3</td><td>Adequate</td><td>Control is intermittently available or has limited access during critical phases. Maintenance schedule followed most of the time. Occasional planned outages managed.</td></tr>
+        <tr><td style="text-align:center" class="score-5">4</td><td>Good</td><td>Control is generally available with occasional scheduled downtime that is managed safely. Maintenance records current and compliant.</td></tr>
+        <tr><td style="text-align:center" class="score-5">5</td><td>Excellent</td><td>Control is consistently available and accessible when needed. Full maintenance compliance records, real-time status monitoring, bypass management procedure in place.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- R — Reliability -->
+  <div class="calc-card">
+    <h2>R — Reliability</h2>
+    <p style="font-size:12px;margin-bottom:8px"><strong>Definition:</strong> The control must consistently perform its function over time and across conditions.</p>
+    <p style="font-size:12px;margin-bottom:4px"><strong>Key Questions:</strong> What is the failure rate or Mean Time Between Failures (MTBF)? Are there redundancies or backups? Has it failed in the past?</p>
+    <p style="font-size:12px;margin-bottom:8px"><strong>Example:</strong> A pressure relief valve that sticks intermittently is unreliable — even if it passed initial testing.</p>
+    <table class="farsi-crit">
+      <thead><tr><th style="width:60px;text-align:center">Score</th><th style="width:160px">Level</th><th>Criteria / Evidence Indicators</th></tr></thead>
+      <tbody>
+        <tr><td style="text-align:center" class="score-1">1</td><td>Poor</td><td>Control fails frequently or lacks redundancy. MTBF low or unknown. Multiple documented failures with no root cause analysis or corrective action.</td></tr>
+        <tr><td style="text-align:center" class="score-3">2</td><td>Below Adequate</td><td>Control has significant failure history with limited backup measures. MTBF below acceptable threshold. Some incident reports exist but corrective actions incomplete.</td></tr>
+        <tr><td style="text-align:center" class="score-3">3</td><td>Adequate</td><td>Control has moderate failure rate or limited backup systems. MTBF acceptable. Incident reports exist with some corrective actions implemented.</td></tr>
+        <tr><td style="text-align:center" class="score-5">4</td><td>Good</td><td>Control has low failure rate with some redundancy in place. MTBF within acceptable range. Reliability engineering analysis available.</td></tr>
+        <tr><td style="text-align:center" class="score-5">5</td><td>Excellent</td><td>Control performs consistently with low failure rate and robust redundancy. High MTBF documented. Full reliability analysis, historical performance data, and backup systems verified.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- S — Survivability -->
+  <div class="calc-card">
+    <h2>S — Survivability</h2>
+    <p style="font-size:12px;margin-bottom:8px"><strong>Definition:</strong> The control must remain functional during and after adverse conditions (e.g., fire, explosion, flood, seismic event).</p>
+    <p style="font-size:12px;margin-bottom:4px"><strong>Key Questions:</strong> Can it withstand environmental stressors? Is it protected from cascading failures? Does it have post-event functionality?</p>
+    <p style="font-size:12px;margin-bottom:8px"><strong>Example:</strong> A control panel located in a blast zone must be shielded or remotely operable to survive an incident.</p>
+    <table class="farsi-crit">
+      <thead><tr><th style="width:60px;text-align:center">Score</th><th style="width:160px">Level</th><th>Criteria / Evidence Indicators</th></tr></thead>
+      <tbody>
+        <tr><td style="text-align:center" class="score-1">1</td><td>Poor</td><td>Control is vulnerable to environmental stressors (fire, blast, flood). No environmental qualification. Location or design exposes control to likely failure during the incident it is meant to mitigate.</td></tr>
+        <tr><td style="text-align:center" class="score-3">2</td><td>Below Adequate</td><td>Control has minimal protection with known vulnerability to adverse events. Partial shielding or location mitigation only. Post-event functionality not verified.</td></tr>
+        <tr><td style="text-align:center" class="score-3">3</td><td>Adequate</td><td>Control has partial protection or limited survivability. Environmental qualification partial. Some stress testing conducted.</td></tr>
+        <tr><td style="text-align:center" class="score-5">4</td><td>Good</td><td>Control is mostly protected with minor exposure risks under extreme events. Fire/blast ratings available. Post-event testing conducted periodically.</td></tr>
+        <tr><td style="text-align:center" class="score-5">5</td><td>Excellent</td><td>Control is fully protected and remains functional under adverse conditions. Full environmental qualification, fire and blast rating certification, remote operability, post-event functionality verified.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- I — Interaction -->
+  <div class="calc-card">
+    <h2>I — Interaction</h2>
+    <p style="font-size:12px;margin-bottom:8px"><strong>Definition:</strong> The control must integrate effectively with other systems, controls, and human operators.</p>
+    <p style="font-size:12px;margin-bottom:4px"><strong>Key Questions:</strong> Does it communicate with upstream/downstream systems? Are there interface issues or delays? Is it intuitive for operators?</p>
+    <p style="font-size:12px;margin-bottom:8px"><strong>Example:</strong> An emergency shutdown system must coordinate with alarms, valves, and operator panels — not act in isolation.</p>
+    <table class="farsi-crit">
+      <thead><tr><th style="width:60px;text-align:center">Score</th><th style="width:160px">Level</th><th>Criteria / Evidence Indicators</th></tr></thead>
+      <tbody>
+        <tr><td style="text-align:center" class="score-1">1</td><td>Poor</td><td>Control does not integrate with other systems or causes conflicts. System integration testing not conducted. Known interface failures or operator confusion documented.</td></tr>
+        <tr><td style="text-align:center" class="score-3">2</td><td>Below Adequate</td><td>Control has significant interface issues or creates dependency conflicts. Partial integration only. HMI review reveals usability issues. Cross-control dependency not mapped.</td></tr>
+        <tr><td style="text-align:center" class="score-3">3</td><td>Adequate</td><td>Control interacts with some systems but has interface issues. System integration testing partially complete. Some HMI issues identified and being addressed.</td></tr>
+        <tr><td style="text-align:center" class="score-5">4</td><td>Good</td><td>Control integrates well with most systems with minor coordination issues. System integration test records available. HMI review completed. Cross-control dependency mapped.</td></tr>
+        <tr><td style="text-align:center" class="score-5">5</td><td>Excellent</td><td>Control integrates seamlessly with all other systems and supports coordinated emergency response. Full system integration certification, HMI design verification, operator training verified, cross-control dependency mapping complete.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Quick Scoring Reference Card</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Score</th>
+          <th>Label</th>
+          <th>Functionality (F)</th>
+          <th>Availability (A)</th>
+          <th>Reliability (R)</th>
+          <th>Survivability (S)</th>
+          <th>Interaction (I)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="text-align:center;font-weight:700;color:#C00000">1</td>
+          <td>Poor</td>
+          <td>Non-functional or misconfigured</td>
+          <td>Unavailable / bypassed</td>
+          <td>Frequent failures, no redundancy</td>
+          <td>Vulnerable to hazard event</td>
+          <td>Conflicts with other systems</td>
+        </tr>
+        <tr>
+          <td style="text-align:center;font-weight:700;color:#c07a00">2</td>
+          <td>Below Adequate</td>
+          <td>Functions under ideal conditions only</td>
+          <td>Often unavailable at peak risk</td>
+          <td>Significant failure history</td>
+          <td>Minimal protection</td>
+          <td>Significant interface issues</td>
+        </tr>
+        <tr>
+          <td style="text-align:center;font-weight:700;color:#c07a00">3</td>
+          <td>Adequate</td>
+          <td>Inconsistent performance, known gaps</td>
+          <td>Intermittently available</td>
+          <td>Moderate failure rate</td>
+          <td>Partial protection</td>
+          <td>Some interface issues</td>
+        </tr>
+        <tr>
+          <td style="text-align:center;font-weight:700;color:#375623">4</td>
+          <td>Good</td>
+          <td>Consistent with minor limitations</td>
+          <td>Generally available, managed outages</td>
+          <td>Low failure rate, some redundancy</td>
+          <td>Mostly protected</td>
+          <td>Integrates well, minor issues</td>
+        </tr>
+        <tr>
+          <td style="text-align:center;font-weight:700;color:#375623">5</td>
+          <td>Excellent</td>
+          <td>Fully certified, all conditions</td>
+          <td>Consistently available, monitored</td>
+          <td>High MTBF, robust redundancy</td>
+          <td>Fully protected, qualified</td>
+          <td>Seamless integration, verified</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- =========================================================
+     JAVASCRIPT
+     ========================================================= -->
+<script>
+'use strict';
+
+// ---- Constants ----
+const HIER = {
+  Elimination: 0.0,
+  Substitution: 0.2,
+  Engineering: 0.4,
+  Admin: 0.6,
+  PPE: 0.8
+};
+
+// ---- Hierarchy order for Safeguard 2 (sequential, top-down application) ----
+const HIER_ORDER = ['Elimination','Substitution','Engineering','Admin','PPE'];
+
+let rowIdx = 0;
+
+// ---- Risk rating from numeric score ----
+function riskRating(score) {
+  if (!score || isNaN(score) || score <= 0) return { label:'–', cls:'' };
+  if (score >= 15) return { label:'EXTREME', cls:'risk-extreme' };
+  if (score >= 10) return { label:'HIGH', cls:'risk-high' };
+  if (score >= 5)  return { label:'MEDIUM', cls:'risk-medium' };
+  return { label:'LOW', cls:'risk-low' };
+}
+
+// ---- Effectiveness multiplier from score — banded (FARSI Reduction Factors model) ----
+// >=4.0 High x1.00 | 3.0-3.9 Moderate x0.60 | 2.0-2.9 Low x0.30 | <2.0 Very Low x0.10
+function effBand(score) {
+  if (!score || isNaN(score) || score < 1) return null;
+  if (score >= 4.0) return { mult: 1.00, label: 'High' };
+  if (score >= 3.0) return { mult: 0.60, label: 'Moderate' };
+  if (score >= 2.0) return { mult: 0.30, label: 'Low' };
+  return { mult: 0.10, label: 'Very Low' };
+}
+
+// ---- Round likelihood — floor at 1, cap at 5 ----
+function roundL(l) {
+  if (!l || isNaN(l)) return 1;
+  return Math.min(5, Math.max(1, Math.round(l)));
+}
+
+// ---- Select helper ----
+function scoreSelect(id, onch) {
+  let h = `<select id="${id}" onchange="${onch}" style="width:44px">
+    <option value="">–</option>`;
+  for (let i=1; i<=5; i++) h += `<option value="${i}">${i}</option>`;
+  return h + '</select>';
+}
+
+// ---- Add a control row ----
+function addRow() {
+  rowIdx++;
+  const n = rowIdx;
+  const hierOpts = `<option value="">Select…</option>` +
+    Object.keys(HIER).map(k => `<option value="${k}">${k} (${HIER[k].toFixed(1)})</option>`).join('');
+
+  const tr = document.createElement('tr');
+  tr.id = `r${n}`;
+  tr.dataset.n = n;
+  tr.innerHTML = `
+    <td style="text-align:center;font-weight:700;color:#2E5496">${n}</td>
+    <td><input type="text" id="cid${n}" placeholder="CTRL-${String(n).padStart(3,'0')}" style="width:78px" oninput="calculate()"></td>
+    <td><select id="ctype${n}" onchange="calculate()">${hierOpts}</select></td>
+    <td><select id="cmeth${n}" onchange="toggleMethod(${n});calculate()">
+      <option value="">Select…</option>
+      <option value="FARSI">FARSI</option>
+      <option value="Simple">Simple</option>
+    </select></td>
+    <td>${scoreSelect(`csimple${n}`,'calculate()')}</td>
+    <td><input type="text" id="cnotes${n}" placeholder="Notes…" style="width:95px"></td>
+    <td>${scoreSelect(`cf${n}`,'calculate()')}</td>
+    <td>${scoreSelect(`ca${n}`,'calculate()')}</td>
+    <td>${scoreSelect(`cr${n}`,'calculate()')}</td>
+    <td>${scoreSelect(`cs${n}`,'calculate()')}</td>
+    <td>${scoreSelect(`ci${n}`,'calculate()')}</td>
+    <td class="col-hide"><div class="out" id="obf${n}">–</div></td>
+    <td class="col-hide"><div class="out" id="ofs${n}">–</div></td>
+    <td><div class="out" id="ofe${n}">–</div></td>
+    <td class="col-hide"><div class="out" id="orp${n}">–</div></td>
+    <td class="col-hide"><div class="out" id="ofr${n}">–</div></td>
+    <td class="col-hide"><div class="out" id="ose${n}">–</div></td>
+    <td class="col-hide"><div class="out" id="osr${n}">–</div></td>
+    <td><div class="out" id="ofinal${n}">–</div></td>
+    <td><div class="out" id="opl${n}">–</div></td>
+    <td><div class="out" id="ocl${n}">–</div></td>
+    <td class="col-hide"><div class="out" id="ocr${n}">–</div></td>
+    <td class="col-hide"><div class="out" id="orr${n}">–</div></td>
+    <td class="col-hide"><div class="out" id="opct${n}">–</div></td>
+    <td><div class="out" id="orl${n}">–</div></td>
+    <td><div class="out" id="ork${n}">–</div></td>
+    <td><div class="out" id="orrr${n}">–</div></td>
+    <td style="text-align:center">
+      <label style="display:flex;align-items:center;gap:4px;font-size:10.5px;justify-content:center;white-space:nowrap">
+        <input type="checkbox" id="cindepchk${n}" checked onchange="calculate()"> Independent
+      </label>
+      <input type="text" id="cindep${n}" placeholder="Common-cause note if not independent" style="width:160px;margin-top:3px;font-size:10px">
+    </td>
+    <td class="no-print"><button class="btn btn-danger btn-sm" onclick="removeRow(${n})">✕ Remove</button></td>
+  `;
+  document.getElementById('ctrlBody').appendChild(tr);
+  toggleMethod(n);
+  calculate();
+}
+
+// ---- Toggle ADI floor input visibility ----
+function toggleADIFloor() {
+  const isADI = val('isADI') === '1';
+  const grp = document.getElementById('adiFloorGroup');
+  if (grp) grp.style.display = isADI ? 'flex' : 'none';
+}
+
+// ---- Toggle FARSI / Simple inputs ----
+function toggleMethod(n) {
+  const meth = val(`cmeth${n}`);
+  const farsiIds = [`cf${n}`,`ca${n}`,`cr${n}`,`cs${n}`,`ci${n}`];
+  const simpleId = `csimple${n}`;
+  farsiIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.disabled = meth !== 'FARSI';
+    el.style.opacity = meth === 'FARSI' ? '1' : '0.4';
+    if (meth !== 'FARSI') el.value = '';
+  });
+  const sel = document.getElementById(simpleId);
+  if (sel) {
+    sel.disabled = meth !== 'Simple';
+    sel.style.opacity = meth === 'Simple' ? '1' : '0.4';
+    if (meth !== 'Simple') sel.value = '';
+  }
+}
+
+// ---- Remove row ----
+function removeRow(n) {
+  const el = document.getElementById(`r${n}`);
+  if (el) el.remove();
+  calculate();
+}
+
+// ---- Clear all ----
+function clearAll() {
+  if (!confirm('Clear all control rows and hazard inputs? This cannot be undone.')) return;
+  document.getElementById('ctrlBody').innerHTML = '';
+  document.getElementById('hazardDesc').value = '';
+  document.getElementById('inherentL').value = '';
+  document.getElementById('inherentC').value = '';
+  document.getElementById('tCalcId').value = '';
+  document.getElementById('tParentRA').value = '';
+  document.getElementById('tFigtree').value = '';
+  document.getElementById('tAssessor').value = '';
+  document.getElementById('tDate').value = '';
+  document.getElementById('tReviewer').value = '';
+  document.getElementById('tNotes').value = '';
+  rowIdx = 0;
+  calculate();
+}
+
+// ---- Get value helper ----
+function val(id) {
+  const el = document.getElementById(id);
+  return el ? el.value : '';
+}
+
+// ---- Set output element ----
+function setOut(id, text, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  if (cls !== undefined) el.className = 'out ' + (cls || '');
+}
+
+// ---- Main calculation ----
+function calculate() {
+  const L = parseFloat(val('inherentL')) || 0;
+  const C = parseFloat(val('inherentC')) || 0;
+  const iScore = L && C ? L * C : 0;
+  const iRat = riskRating(iScore);
+
+  // Update inherent displays
+  const isEl = document.getElementById('iScore');
+  const irEl = document.getElementById('iRating');
+  if (isEl) { isEl.textContent = iScore || '–'; isEl.className = 'out ' + (iScore ? iRat.cls : ''); }
+  if (irEl) { irEl.textContent = iRat.label; irEl.className = 'out ' + (iScore ? iRat.cls : ''); }
+
+  // Residual Likelihood Floor inputs (Safeguard 1 — FARSI Reduction Factors guidance)
+  const isADI = val('isADI') === '1';
+  const adiFloorPct = Math.min(15, Math.max(10, parseFloat(val('adiFloorPct')) || 15));
+  const floorFrac = isADI ? (adiFloorPct / 100) : 0.20;
+
+  const rows = document.querySelectorAll('#ctrlBody tr[data-n]');
+
+  // Hierarchy order check (Safeguard 2 — soft warning only, does not block calculation)
+  let lastRank = -1, orderBroken = false;
+  rows.forEach(tr => {
+    const rank = HIER_ORDER.indexOf(val(`ctype${tr.dataset.n}`));
+    if (rank >= 0) { if (rank < lastRank) orderBroken = true; lastRank = Math.max(lastRank, rank); }
+  });
+  const orderWarnEl = document.getElementById('orderWarning');
+  if (orderWarnEl) orderWarnEl.style.display = orderBroken ? 'block' : 'none';
+
+  // Process rows sequentially
+  let priorL = L;
+  let priorRowRes = null;     // residual factor actually applied by the previous row
+  let priorRowEntryL = L;     // likelihood that fed into the previous row
+  let hasElimination = false; // once true, floor no longer applies (hazard removed)
+  let lastRndRisk = iScore;
+  let lastCurrL = L;
+
+  rows.forEach(tr => {
+    const n = tr.dataset.n;
+    const ctype = val(`ctype${n}`);
+    const meth = val(`cmeth${n}`);
+    const baseFactor = ctype in HIER ? HIER[ctype] : null;
+    const reductPot = baseFactor !== null ? 1 - baseFactor : null;
+    const indepEl = document.getElementById(`cindepchk${n}`);
+    const indep = indepEl ? indepEl.checked : true;
+
+    // FARSI inputs
+    const fv = parseFloat(val(`cf${n}`)) || 0;
+    const av = parseFloat(val(`ca${n}`)) || 0;
+    const rv = parseFloat(val(`cr${n}`)) || 0;
+    const sv = parseFloat(val(`cs${n}`)) || 0;
+    const iv = parseFloat(val(`ci${n}`)) || 0;
+    const farsiAll = [fv,av,rv,sv,iv];
+    const farsiComplete = farsiAll.every(x => x > 0);
+    const farsiAvg = farsiComplete ? farsiAll.reduce((a,b)=>a+b,0)/5 : null;
+    const farsiBand = farsiComplete ? effBand(farsiAvg) : null;
+    const farsiEff = farsiBand ? farsiBand.mult : null;
+
+    // Simple input
+    const simpleV = parseFloat(val(`csimple${n}`)) || 0;
+    const simpleBand = simpleV ? effBand(simpleV) : null;
+    const simpleEff = simpleBand ? simpleBand.mult : null;
+
+    // Residuals — Effective Residual = Base Factor + (Reduction Potential × (1 − Effectiveness))
+    // Effectiveness is the banded multiplier (FARSI Reduction Factors Table 2), not (Score−1)/4
+    let farsiRes = null, simpleRes = null, finalRes = null;
+    if (baseFactor !== null && farsiEff !== null) {
+      farsiRes = baseFactor + reductPot * (1 - farsiEff);
+    }
+    if (baseFactor !== null && simpleEff !== null) {
+      simpleRes = baseFactor + reductPot * (1 - simpleEff);
+    }
+
+    // Final residual — use method selected; fallback to whichever has data
+    if (meth === 'FARSI' && farsiRes !== null)      finalRes = farsiRes;
+    else if (meth === 'Simple' && simpleRes !== null) finalRes = simpleRes;
+    else if (farsiRes !== null)   finalRes = farsiRes;
+    else if (simpleRes !== null)  finalRes = simpleRes;
+
+    // Independence Check (Safeguard 3) — if NOT independent of the prior control,
+    // combine as one control: use the lower (more protective) residual once,
+    // applied to the likelihood that fed the prior control, instead of compounding both.
+    let appliedRes = null, currL = null;
+    if (!indep && priorRowRes !== null && finalRes !== null) {
+      appliedRes = Math.min(priorRowRes, finalRes);
+      currL = priorRowEntryL * appliedRes;
+    } else if (priorL && finalRes !== null) {
+      appliedRes = finalRes;
+      currL = priorL * finalRes;
+    }
+
+    // Residual Likelihood Floor — non-Elimination controls only, exempt once hazard eliminated
+    let floorApplied = false;
+    if (currL !== null && ctype !== 'Elimination' && !hasElimination) {
+      const floorVal = L * floorFrac;
+      if (currL < floorVal) { currL = floorVal; floorApplied = true; }
+    }
+    if (ctype === 'Elimination') hasElimination = true;
+
+    const currRisk = (currL !== null && C) ? currL * C : null;
+    const rndL = currL !== null ? roundL(currL) : null;
+    const rndRisk = (rndL && C) ? rndL * C : null;
+    const pct = (iScore && currRisk !== null) ? (iScore - currRisk) / iScore * 100 : null;
+
+    const crRat = riskRating(currRisk);
+    const rndRat = riskRating(rndRisk);
+
+    // Output updates
+    setOut(`obf${n}`, baseFactor !== null ? baseFactor.toFixed(1) : '–');
+    setOut(`ofs${n}`, farsiAvg !== null ? farsiAvg.toFixed(2) : '–');
+    setOut(`ofe${n}`, farsiBand ? `${farsiBand.label} (${(farsiEff*100).toFixed(0)}%)` : '–');
+    setOut(`orp${n}`, reductPot !== null ? (reductPot*100).toFixed(0)+'%' : '–');
+    setOut(`ofr${n}`, farsiRes !== null ? farsiRes.toFixed(4) : '–');
+    setOut(`ose${n}`, simpleBand ? `${simpleBand.label} (${(simpleEff*100).toFixed(0)}%)` : '–');
+    setOut(`osr${n}`, simpleRes !== null ? simpleRes.toFixed(4) : '–');
+    setOut(`ofinal${n}`, appliedRes !== null ? appliedRes.toFixed(4) + ((!indep && priorRowRes !== null && appliedRes !== finalRes) ? ' (comb.)' : '') : '–');
+    setOut(`opl${n}`, priorL ? priorL.toFixed(3) : '–');
+    setOut(`ocl${n}`, currL !== null ? currL.toFixed(3) + (floorApplied ? ' ⚑' : '') : '–', floorApplied ? 'floor-flag' : '');
+    setOut(`ocr${n}`, currRisk !== null ? currRisk.toFixed(2) : '–', currRisk !== null ? crRat.cls : '');
+    setOut(`orr${n}`, crRat.label, currRisk !== null ? crRat.cls : '');
+    setOut(`opct${n}`, pct !== null ? pct.toFixed(1)+'%' : '–');
+    setOut(`orl${n}`, rndL !== null ? rndL : '–');
+    setOut(`ork${n}`, rndRisk !== null ? rndRisk : '–', rndRisk !== null ? rndRat.cls : '');
+    setOut(`orrr${n}`, rndRat.label, rndRisk !== null ? rndRat.cls : '');
+
+    // Advance sequential state
+    priorRowEntryL = priorL;
+    priorRowRes = appliedRes;
+    if (currL !== null) { priorL = currL; lastCurrL = currL; }
+    if (rndRisk !== null) lastRndRisk = rndRisk;
+  });
+
+  updateSummary(iScore, iRat, lastRndRisk, C);
+}
+
+// ---- Summary panel ----
+function updateSummary(iScore, iRat, lastRndRisk, C) {
+  const s1    = document.getElementById('sumIScore');
+  const s1r   = document.getElementById('sumIRating');
+  const s2    = document.getElementById('sumCScore');
+  const s2r   = document.getElementById('sumCRating');
+  const s3    = document.getElementById('sumPct');
+  const fill  = document.getElementById('sumFill');
+  const card3 = document.getElementById('sumCard3');
+  const s3v   = document.getElementById('sumCRatingVal');
+  const s3s   = document.getElementById('sumCRatingSub');
+
+  if (s1)  s1.textContent  = iScore || '–';
+  if (s1r) s1r.textContent = iScore ? iRat.label + ' risk' : 'Enter likelihood & consequence';
+
+  const rows    = document.querySelectorAll('#ctrlBody tr[data-n]');
+  const hasRows = rows.length > 0;
+  const rndRat  = riskRating(lastRndRisk);
+
+  // Reset rating card
+  const ratingClasses = ['risk-extreme','risk-high','risk-medium','risk-low'];
+  if (card3) ratingClasses.forEach(c => card3.classList.remove(c));
+
+  if (!hasRows || !C || !iScore) {
+    if (s2)  s2.textContent  = '–';
+    if (s2r) s2r.textContent = hasRows ? 'Add inherent L & C' : 'Add control rows';
+    if (s3v) s3v.textContent = '–';
+    if (s3s) s3s.textContent = 'After all controls implemented';
+    if (s3)  s3.textContent  = '–';
+    if (fill) fill.style.width = '0%';
+    return;
+  }
+
+  if (s2)  s2.textContent  = lastRndRisk || '–';
+  if (s2r) s2r.textContent = 'Rounded score — transfer to Figtree';
+
+  // Populate & colour-code the Current Risk Rating card
+  if (s3v) s3v.textContent = rndRat.label;
+  if (s3s) s3s.textContent = 'After all controls implemented';
+  if (card3 && rndRat.cls) card3.classList.add(rndRat.cls);
+
+  const pct = iScore ? ((iScore - lastRndRisk) / iScore * 100) : 0;
+  if (s3)  s3.textContent = pct.toFixed(1) + '%';
+  if (fill) fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+}
+
+// ---- Tab switching ----
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const panel = document.getElementById(`tab-${name}`);
+  if (panel) panel.classList.add('active');
+  // Find matching button by onclick attr
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    if (b.getAttribute('onclick') === `showTab('${name}')`) b.classList.add('active');
+  });
+}
+
+// ---- Export CSV ----
+function exportCSV() {
+  const L = val('inherentL'), C = val('inherentC');
+  const iScore = L && C ? parseInt(L)*parseInt(C) : '';
+  let csv = `"GOHS4.1.8.X FARSI Control Effectiveness Calculator v0.2"\n`;
+  csv += `"Hazard/Risk","${val('hazardDesc').replace(/"/g,'""')}"\n`;
+  csv += `"Inherent Likelihood","${L}"\n"Inherent Consequence","${C}"\n"Inherent Score","${iScore}"\n\n`;
+  csv += '"#","Control ID","Control Type","Method","Simple Rating","F","A","R","S","I",';
+  csv += '"Base Factor","FARSI Score","FARSI Eff%","Reduction Potential","FARSI Residual",';
+  csv += '"Simple Eff%","Simple Residual","Final Residual","Prior Likelihood","Current Likelihood",';
+  csv += '"Current Risk","Risk Rating","% Reduction","Rounded L","Rounded Risk","Rounded Risk Rating",';
+  csv += '"Independence Check","Notes"\n';
+
+  document.querySelectorAll('#ctrlBody tr[data-n]').forEach(tr => {
+    const n = tr.dataset.n;
+    const cells = [
+      n, val(`cid${n}`), val(`ctype${n}`), val(`cmeth${n}`), val(`csimple${n}`),
+      val(`cf${n}`), val(`ca${n}`), val(`cr${n}`), val(`cs${n}`), val(`ci${n}`),
+      t(`obf${n}`), t(`ofs${n}`), t(`ofe${n}`), t(`orp${n}`), t(`ofr${n}`),
+      t(`ose${n}`), t(`osr${n}`), t(`ofinal${n}`), t(`opl${n}`), t(`ocl${n}`),
+      t(`ocr${n}`), t(`orr${n}`), t(`opct${n}`), t(`orl${n}`), t(`ork${n}`), t(`orrr${n}`),
+      val(`cindep${n}`), val(`cnotes${n}`)
+    ].map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',');
+    csv += cells + '\n';
+  });
+
+  csv += '\n"Traceability"\n';
+  csv += `"Calculation ID","${val('tCalcId')}"\n`;
+  csv += `"Parent RA ID","${val('tParentRA')}"\n`;
+  csv += `"Figtree Hazard ID","${val('tFigtree')}"\n`;
+  csv += `"Assessor","${val('tAssessor')}"\n`;
+  csv += `"Date","${val('tDate')}"\n`;
+  csv += `"Reviewed By","${val('tReviewer')}"\n`;
+  csv += `"Notes","${val('tNotes').replace(/"/g,'""')}"\n`;
+
+  const blob = new Blob(['﻿' + csv, { type: 'text/csv;charset=utf-8' }]);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const d = new Date().toISOString().slice(0,10);
+  a.download = `FARSI_Calc_${val('tCalcId')||d}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function t(id) {
+  const el = document.getElementById(id);
+  return el ? el.textContent : '';
+}
+
+// ---- Print to PDF: Purpose (Section 1) + Calculator only ----
+function printReport() {
+  const purposeDiv  = document.querySelector('.print-purpose');
+  const traceCard   = document.getElementById('traceCard');
+  const calcTab     = document.getElementById('tab-calculator');
+  // Remember traceCard's original next sibling so we can restore position
+  const nextSibling = traceCard ? traceCard.nextSibling : null;
+
+  // Move Traceability to sit right after Purpose on page 1
+  if (purposeDiv && traceCard) purposeDiv.after(traceCard);
+
+  document.body.classList.add('print-mode');
+
+  window.addEventListener('afterprint', function cleanup() {
+    // Restore Traceability to its original place inside the calculator tab
+    if (traceCard) {
+      if (nextSibling) calcTab.insertBefore(traceCard, nextSibling);
+      else calcTab.appendChild(traceCard);
+    }
+    document.body.classList.remove('print-mode');
+    window.removeEventListener('afterprint', cleanup);
+  });
+
+  window.print();
+}
+
+// ---- Init: start with one row ----
+addRow();
+</script>
+</body>
+</html>
