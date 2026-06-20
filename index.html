@@ -1,144 +1,81 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>URL Parser — Excel Edition</title>
-  <link rel="stylesheet" href="styles.css" />
-  <!-- SheetJS for Excel parsing -->
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Safety Management System — TP Risk Management</title>
+<link rel="stylesheet" href="styles.css"/><link rel="stylesheet" href="sms.css"/>
 </head>
 <body>
-  <header class="site-header">
-    <div class="header-inner">
-      <div class="logo">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-        </svg>
-        <span>URL Parser</span>
-      </div>
-      <p class="tagline">Upload an Excel file — instantly parse every URL into its components</p>
-      <a href="flowchart.html" style="margin-left:auto; display:inline-flex; align-items:center; gap:6px; color:#fff; font-size:13px; font-weight:600; text-decoration:none; opacity:.85; transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.85">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        Risk Assessment Flowchart
-      </a>
-    </div>
-  </header>
-
-  <main class="container">
-
-    <!-- ── Upload card ── -->
-    <section class="card upload-card" id="uploadSection">
-      <div class="drop-zone" id="dropZone">
-        <svg class="drop-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="17 8 12 3 7 8"/>
-          <line x1="12" y1="3" x2="12" y2="15"/>
-        </svg>
-        <p class="drop-title">Drop your Excel file here</p>
-        <p class="drop-sub">or</p>
-        <label class="btn btn-primary" for="fileInput">Browse file</label>
-        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" hidden />
-        <p class="drop-hint">Supports <strong>.xlsx</strong>, <strong>.xls</strong>, <strong>.csv</strong></p>
-      </div>
-
-      <div class="config-row">
-        <div class="config-group">
-          <label for="sheetSelect">Sheet</label>
-          <select id="sheetSelect" disabled>
-            <option>— load a file first —</option>
-          </select>
-        </div>
-        <div class="config-group">
-          <label for="urlColInput">URL column header <span class="hint">(leave blank to auto-detect)</span></label>
-          <input type="text" id="urlColInput" placeholder="e.g. URL" />
-        </div>
-        <div class="config-group checkbox-group">
-          <label>
-            <input type="checkbox" id="firstRowHeader" checked />
-            First row is a header
-          </label>
-        </div>
-        <button class="btn btn-primary" id="parseBtn" disabled>Parse URLs</button>
-      </div>
-
-      <div class="sample-hint">
-        No file yet? <a href="sample_urls.xlsx" download>Download sample_urls.xlsx</a> and try it.
-      </div>
-    </section>
-
-    <!-- ── Stats bar ── -->
-    <section class="stats-bar hidden" id="statsBar">
-      <div class="stat"><span class="stat-value" id="statTotal">0</span><span class="stat-label">URLs found</span></div>
-      <div class="stat"><span class="stat-value" id="statValid">0</span><span class="stat-label">Valid</span></div>
-      <div class="stat"><span class="stat-value" id="statInvalid">0</span><span class="stat-label">Invalid / blank</span></div>
-      <div class="stat"><span class="stat-value" id="statSchemes">—</span><span class="stat-label">Unique schemes</span></div>
-      <div class="stat"><span class="stat-value" id="statHosts">—</span><span class="stat-label">Unique hosts</span></div>
-    </section>
-
-    <!-- ── Toolbar ── -->
-    <section class="toolbar hidden" id="toolbar">
-      <div class="toolbar-left">
-        <input type="search" id="filterInput" placeholder="Filter by any field…" />
-        <select id="schemeFilter">
-          <option value="">All schemes</option>
-        </select>
-      </div>
-      <div class="toolbar-right">
-        <button class="btn btn-outline" id="copyBtn">Copy table</button>
-        <button class="btn btn-outline" id="exportBtn">Export CSV</button>
-        <button class="btn btn-outline" id="exportXlsxBtn">Export Excel</button>
-        <button class="btn btn-ghost" id="resetBtn">Reset</button>
-      </div>
-    </section>
-
-    <!-- ── Results table ── -->
-    <section class="card table-card hidden" id="tableCard">
-      <div class="table-wrap">
-        <table id="resultsTable">
-          <thead>
-            <tr>
-              <th data-col="row">#</th>
-              <th data-col="raw" class="sortable">Original URL <span class="sort-icon">⇅</span></th>
-              <th data-col="scheme" class="sortable">Scheme <span class="sort-icon">⇅</span></th>
-              <th data-col="username">User</th>
-              <th data-col="password">Pass</th>
-              <th data-col="hostname" class="sortable">Hostname <span class="sort-icon">⇅</span></th>
-              <th data-col="port">Port</th>
-              <th data-col="pathname">Path</th>
-              <th data-col="search">Query string</th>
-              <th data-col="params">Params (key=value)</th>
-              <th data-col="hash">Fragment</th>
-              <th data-col="valid">Valid?</th>
-            </tr>
-          </thead>
-          <tbody id="resultsBody"></tbody>
-        </table>
-      </div>
-      <div class="table-footer">
-        <span id="rowCount">0 rows</span>
-        <div class="pagination" id="pagination"></div>
-      </div>
-    </section>
-
-    <!-- ── Detail panel (click a row) ── -->
-    <div class="detail-overlay hidden" id="detailOverlay">
-      <div class="detail-panel" id="detailPanel">
-        <button class="detail-close" id="detailClose">✕</button>
-        <h2 class="detail-title">URL Detail</h2>
-        <pre class="detail-url" id="detailUrl"></pre>
-        <table class="detail-table" id="detailTable"></table>
-        <div class="detail-params" id="detailParams"></div>
-      </div>
-    </div>
-
-  </main>
-
-  <footer class="site-footer">
-    URL Parser — runs entirely in your browser. No data is uploaded.
-  </footer>
-
-  <script src="app.js"></script>
-</body>
-</html>
+<header class="site-header"><div class="header-inner">
+<div class="logo"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>TP Risk Management SMS</span></div>
+<p class="tagline">Safety Management System — integrated risk, incident, audit &amp; performance tools</p>
+</div></header>
+<nav class="module-nav"><div class="module-nav-inner">
+<a href="index.html" class="active">⬛ Hub</a>
+<a href="risk-register.html">⚠️ Risk Register</a>
+<a href="incident-report.html">🔴 Incidents</a>
+<a href="corrective-actions.html">✅ Corrective Actions</a>
+<a href="safety-dashboard.html">📊 Dashboard</a>
+<a href="audit-inspection.html">📋 Audits</a>
+<span class="module-nav-sep">|</span>
+<a href="flowchart.html">⬡ SFARP Flowchart</a>
+<a href="GOHS4.1.8.X_FARSI_Control_Effectiveness_Calculator_v0.2.html">⬡ FARSI Calculator</a>
+<a href="vrtp-ohs-tools/Figtree_Risk_Entry_Review.html">⬡ Risk Entry Review</a>
+<a href="url-parser.html">⬡ URL Parser</a>
+</div></nav>
+<main class="container">
+<div class="hub-stats" id="hubStats">
+<div class="hub-stat info"><div class="hub-stat-val" id="sRO">—</div><div class="hub-stat-label">Open Risks</div><div class="hub-stat-sub" id="sRCH"></div></div>
+<div class="hub-stat" id="iCard"><div class="hub-stat-val" id="sIO">—</div><div class="hub-stat-label">Open Incidents</div><div class="hub-stat-sub" id="sIM"></div></div>
+<div class="hub-stat" id="cCard"><div class="hub-stat-val" id="sCO">—</div><div class="hub-stat-label">Open Corrective Actions</div><div class="hub-stat-sub" id="sCOD"></div></div>
+<div class="hub-stat" id="aCard"><div class="hub-stat-val" id="sAU">—</div><div class="hub-stat-label">Upcoming Audits</div><div class="hub-stat-sub" id="sAOD"></div></div>
+</div>
+<h2 style="font-size:13px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.06em;margin-top:8px">SMS Modules</h2>
+<div class="module-grid">
+<a href="risk-register.html" class="module-card"><div class="module-card-icon">⚠️</div><div class="module-card-title">Risk Register</div><div class="module-card-desc">Identify and assess hazards using a 5×5 risk matrix. Track inherent and residual risk ratings, controls, owners and review dates.</div><div class="module-card-meta" id="lR">—</div></a>
+<a href="incident-report.html" class="module-card"><div class="module-card-icon">🔴</div><div class="module-card-title">Incident &amp; Near-Miss Log</div><div class="module-card-desc">Record incidents, near-misses, property damage and environmental events. Capture investigation details and link corrective actions.</div><div class="module-card-meta" id="lI">—</div></a>
+<a href="corrective-actions.html" class="module-card"><div class="module-card-icon">✅</div><div class="module-card-title">Corrective Action Register</div><div class="module-card-desc">Track CARs from incidents, audits, risk reviews and observations. Assign owners, set due dates and review effectiveness.</div><div class="module-card-meta" id="lC">—</div></a>
+<a href="safety-dashboard.html" class="module-card"><div class="module-card-icon">📊</div><div class="module-card-title">Safety Performance Dashboard</div><div class="module-card-desc">Live SPIs and trend charts: incidents by month, risk distribution, CAR status, audit completion. Pulls data from all modules.</div><div class="module-card-meta">View charts →</div></a>
+<a href="audit-inspection.html" class="module-card"><div class="module-card-icon">📋</div><div class="module-card-title">Audit &amp; Inspection Register</div><div class="module-card-desc">Plan and track internal/external audits, site inspections and management reviews. Record findings and link corrective actions.</div><div class="module-card-meta" id="lA">—</div></a>
+</div>
+<h2 style="font-size:13px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.06em;margin-top:8px">Supporting Tools</h2>
+<div class="module-grid">
+<a href="flowchart.html" class="module-card"><div class="module-card-icon">⬡</div><div class="module-card-title">SFARP Risk Assessment Flowchart</div><div class="module-card-desc">Decision flowchart for So Far As Reasonably Practicable risk assessments aligned to WHS legislation.</div><div class="module-card-meta">Open →</div></a>
+<a href="GOHS4.1.8.X_FARSI_Control_Effectiveness_Calculator_v0.2.html" class="module-card"><div class="module-card-icon">⬡</div><div class="module-card-title">FARSI Control Effectiveness Calculator</div><div class="module-card-desc">GOHS 4.1.8.X — evaluate control effectiveness across Frequency, Adequacy, Reliability, Specificity and Independence.</div><div class="module-card-meta">Open →</div></a>
+<a href="vrtp-ohs-tools/Figtree_Risk_Entry_Review.html" class="module-card"><div class="module-card-icon">⬡</div><div class="module-card-title">Figtree Risk Entry Review</div><div class="module-card-desc">AI-assisted review tool for evaluating risk register entries against VRTP OHS standards and quality criteria.</div><div class="module-card-meta">Open →</div></a>
+<a href="CRITICAL_RISK_MANAGEMENT_BRIEFING.md" class="module-card"><div class="module-card-icon">📄</div><div class="module-card-title">Critical Risk Management Briefing</div><div class="module-card-desc">Comprehensive reference covering critical risk frameworks, control hierarchies, implementation roadmaps and maturity assessment.</div><div class="module-card-meta">Open →</div></a>
+</div>
+<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><h2 style="font-size:15px;font-weight:700">Recent Activity</h2><span style="font-size:12px;color:var(--gray-400)">Last 10 entries across all modules</span></div><div id="recentList"></div></div>
+</main>
+<footer class="site-footer">TP Risk Management SMS &mdash; All data stored locally in your browser</footer>
+<script src="sms-shared.js"></script>
+<script>
+(function(){
+const s=SMS.stats();
+document.getElementById('sRO').textContent=s.riskOpen;
+document.getElementById('sRCH').textContent=s.riskCritical+' Critical · '+s.riskHigh+' High';
+document.getElementById('sIO').textContent=s.incidentOpen;
+document.getElementById('sIM').textContent=s.incidentThisMth+' this month';
+document.getElementById('iCard').className='hub-stat '+(s.incidentOpen>0?'warn':'ok');
+document.getElementById('sCO').textContent=s.carOpen;
+document.getElementById('sCOD').textContent=s.carOverdue>0?'⚠ '+s.carOverdue+' overdue':'None overdue';
+document.getElementById('cCard').className='hub-stat '+(s.carOverdue>0?'danger':s.carOpen>0?'warn':'ok');
+document.getElementById('sAU').textContent=s.auditUpcoming;
+document.getElementById('sAOD').textContent=s.auditOverdue>0?'⚠ '+s.auditOverdue+' overdue':'None overdue';
+document.getElementById('aCard').className='hub-stat '+(s.auditOverdue>0?'danger':'info');
+document.getElementById('lR').textContent=s.riskOpen+' open · '+s.riskTotal+' total →';
+document.getElementById('lI').textContent=s.incidentOpen+' open · '+s.incidentTotal+' total →';
+document.getElementById('lC').textContent=s.carOpen+' open · '+s.carOverdue+' overdue →';
+document.getElementById('lA').textContent=s.auditUpcoming+' upcoming · '+s.auditTotal+' total →';
+const recent=[];
+const tc={Risk:'#D97706',Incident:'#DC2626',CAR:'#2563EB',Audit:'#7C3AED'};
+[['risks','Risk','risk-register.html','hazardDescription'],['incidents','Incident','incident-report.html','description'],['cars','CAR','corrective-actions.html','description'],['audits','Audit','audit-inspection.html','title']].forEach(([k,type,href,lf])=>{
+  SMS.get(k).forEach(r=>recent.push({type,id:r.id,label:r[lf]||'—',ts:r.updated||r.created,href}));
+});
+recent.sort((a,b)=>(b.ts||'').localeCompare(a.ts||''));
+const el=document.getElementById('recentList');
+if(!recent.length){el.innerHTML='<div class="empty-state"><span class="empty-state-icon">📭</span><p>No records yet — start by adding risks, incidents or audits using the modules above.</p></div>';}
+else{el.innerHTML=recent.slice(0,10).map(r=>`<a href="${r.href}" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--gray-100);text-decoration:none;color:inherit"><span style="flex-shrink:0;background:${tc[r.type]}22;color:${tc[r.type]};font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px">${r.type}</span><span style="flex-shrink:0;font-size:12px;color:var(--gray-400);font-family:monospace">${r.id}</span><span style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.label}</span><span style="flex-shrink:0;font-size:11px;color:var(--gray-400)">${SMS.fmtDate(r.ts)}</span></a>`).join('');}
+})();
+</script>
+</body></html>

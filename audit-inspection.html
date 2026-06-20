@@ -1,0 +1,210 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Audit Register — TP SMS</title>
+<link rel="stylesheet" href="styles.css"/><link rel="stylesheet" href="sms.css"/>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+<header class="site-header"><div class="header-inner">
+<div class="logo"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>TP Risk Management SMS</span></div>
+<p class="tagline">Audit &amp; Inspection Register</p>
+</div></header>
+<nav class="module-nav"><div class="module-nav-inner">
+<a href="index.html">⬛ Hub</a><a href="risk-register.html">⚠️ Risk Register</a>
+<a href="incident-report.html">🔴 Incidents</a><a href="corrective-actions.html">✅ Corrective Actions</a>
+<a href="safety-dashboard.html">📊 Dashboard</a>
+<a href="audit-inspection.html" class="active">📋 Audits</a>
+</div></nav>
+<main class="container">
+<div class="toolbar">
+<div class="toolbar-left">
+<button class="btn btn-primary" onclick="openForm()">+ Add Audit / Inspection</button>
+<input type="text" id="filterInput" placeholder="Filter audits…" oninput="render()"/>
+<select id="typeFilter" onchange="render()"><option value="">All types</option><option>Internal Audit</option><option>External Audit</option><option>Site Inspection</option><option>Management Review</option><option>Regulatory Inspection</option><option>Other</option></select>
+<select id="statusFilter" onchange="render()"><option value="">All statuses</option><option>Planned</option><option>In Progress</option><option>Complete</option><option>Overdue</option><option>Cancelled</option></select>
+</div>
+<div class="toolbar-right">
+<button class="btn btn-outline" onclick="doExport()">↓ Export Excel</button>
+<label class="btn btn-outline" style="cursor:pointer">↑ Import<input type="file" accept=".xlsx,.xls,.csv" hidden onchange="doImport(this)"/></label>
+</div>
+</div>
+<div class="stats-bar">
+<div class="stat"><span class="stat-value" id="stTotal">0</span><span class="stat-label">Total</span></div>
+<div class="stat"><span class="stat-value" style="color:#7C3AED" id="stPlanned">0</span><span class="stat-label">Planned</span></div>
+<div class="stat"><span class="stat-value" style="color:#2563EB" id="stIP">0</span><span class="stat-label">In Progress</span></div>
+<div class="stat"><span class="stat-value" style="color:#DC2626" id="stOD">0</span><span class="stat-label">Overdue</span></div>
+<div class="stat"><span class="stat-value" style="color:#16A34A" id="stDone">0</span><span class="stat-label">Complete</span></div>
+<div class="stat"><span class="stat-value" id="stFindings">0</span><span class="stat-label">Total Findings</span></div>
+</div>
+<div class="card table-card">
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>Type</th><th>Title / Scope</th><th>Planned</th><th>Actual</th><th>Auditor</th><th>Area</th><th>Findings</th><th>Status</th><th>CARs</th><th></th></tr></thead>
+<tbody id="tbody"></tbody>
+</table></div>
+<div class="table-footer"><span id="rowCount">0 audits</span></div>
+</div>
+</main>
+
+<div class="modal-overlay hidden" id="modalOverlay">
+<div class="modal">
+<div class="modal-header"><span class="modal-title" id="modalTitle">Add Audit / Inspection</span><button class="modal-close" onclick="closeForm()">×</button></div>
+<div class="modal-body">
+<div class="form-grid">
+<div class="form-group"><label>Audit Type</label><select id="fType"><option>Internal Audit</option><option>External Audit</option><option>Site Inspection</option><option>Management Review</option><option>Regulatory Inspection</option><option>Other</option></select></div>
+<div class="form-group"><label>Title *</label><input type="text" id="fTitle" placeholder="e.g. Q2 OHS Internal Audit"/></div>
+<div class="form-group span2"><label>Scope / Areas Covered</label><textarea id="fScope" rows="2" placeholder="What is being audited or inspected?"></textarea></div>
+<div class="form-group"><label>Planned Date</label><input type="date" id="fPlanned"/></div>
+<div class="form-group"><label>Actual Date</label><input type="date" id="fActual"/></div>
+<div class="form-group"><label>Lead Auditor / Inspector</label><input type="text" id="fAuditor" placeholder="Name or role"/></div>
+<div class="form-group"><label>Area / Department</label><input type="text" id="fArea" placeholder="e.g. Depot, Track Maintenance"/></div>
+<div class="form-group"><label>Status</label><select id="fStatus"><option>Planned</option><option>In Progress</option><option>Complete</option><option>Cancelled</option></select></div>
+</div>
+<hr style="margin:16px 0;border:none;border-top:1px solid var(--gray-200)"/>
+<p style="font-size:12px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">Findings</p>
+<div class="form-grid">
+<div class="form-group"><label>Total Findings</label><input type="number" id="fFTotal" min="0" value="0"/></div>
+<div class="form-group"><label>High / Major Findings</label><input type="number" id="fFHigh" min="0" value="0"/></div>
+<div class="form-group"><label>Medium Findings</label><input type="number" id="fFMed" min="0" value="0"/></div>
+<div class="form-group"><label>Low / Minor Findings</label><input type="number" id="fFLow" min="0" value="0"/></div>
+<div class="form-group span2"><label>Key Findings / Observations</label><textarea id="fFindings" rows="3" placeholder="Summarise key findings…"></textarea></div>
+<div class="form-group span2"><label>Recommendations</label><textarea id="fRecs" rows="2" placeholder="Recommended actions…"></textarea></div>
+<div class="form-group"><label>Linked CAR IDs</label><input type="text" id="fCARs" placeholder="e.g. C0001, C0002"/></div>
+<div class="form-group"><label>Notes</label><textarea id="fNotes" rows="2"></textarea></div>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-outline" onclick="closeForm()">Cancel</button>
+<button class="btn btn-primary" onclick="openCAR()" style="background:#7C3AED">Save &amp; Create CAR</button>
+<button class="btn btn-primary" onclick="saveForm()">Save Audit</button>
+</div>
+</div>
+</div>
+
+<div class="modal-overlay hidden" id="delOverlay">
+<div class="modal" style="max-width:360px">
+<div class="modal-header"><span class="modal-title">Delete Audit?</span><button class="modal-close" onclick="closeDelete()">×</button></div>
+<div class="modal-body"><p style="color:var(--gray-600)">Permanently remove this audit record. Cannot be undone.</p></div>
+<div class="modal-footer"><button class="btn btn-outline" onclick="closeDelete()">Cancel</button><button class="btn btn-primary" style="background:#DC2626" onclick="confirmDelete()">Delete</button></div>
+</div>
+</div>
+
+<footer class="site-footer">TP Risk Management SMS — Audit &amp; Inspection Register</footer>
+<script src="sms-shared.js"></script>
+<script>
+let editId=null,deleteId=null;
+
+function computeStatus(r){
+  if(r.status==='Complete'||r.status==='Cancelled') return r.status;
+  if(SMS.isOverdue(r.plannedDate,r.status)) return 'Overdue';
+  return r.status||'Planned';
+}
+
+function render(){
+  const q=(document.getElementById('filterInput').value||'').toLowerCase();
+  const tf=document.getElementById('typeFilter').value;
+  const sf=document.getElementById('statusFilter').value;
+  let data=SMS.get('audits');
+  if(q) data=data.filter(r=>(r.title+r.area+r.auditor+r.id).toLowerCase().includes(q));
+  if(tf) data=data.filter(r=>r.auditType===tf);
+  if(sf) data=data.filter(r=>computeStatus(r)===sf);
+
+  const all=SMS.get('audits');
+  document.getElementById('stTotal').textContent=all.length;
+  document.getElementById('stPlanned').textContent=all.filter(r=>r.status==='Planned').length;
+  document.getElementById('stIP').textContent=all.filter(r=>r.status==='In Progress').length;
+  document.getElementById('stOD').textContent=all.filter(r=>SMS.isOverdue(r.plannedDate,r.status)).length;
+  document.getElementById('stDone').textContent=all.filter(r=>r.status==='Complete').length;
+  document.getElementById('stFindings').textContent=all.reduce((s,r)=>s+(+r.findingsTotal||0),0);
+  document.getElementById('rowCount').textContent=data.length+' audit'+(data.length!==1?'s':'');
+
+  const tb=document.getElementById('tbody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="11"><div class="empty-state"><span class="empty-state-icon">📋</span><p>No audits or inspections. Click "+ Add Audit / Inspection" to schedule one.</p></div></td></tr>';return;}
+  tb.innerHTML=data.map(r=>{
+    const cs=computeStatus(r);
+    const stCls={'Planned':'status-planned','In Progress':'status-in-progress','Complete':'status-complete','Overdue':'status-overdue','Cancelled':'status-cancelled'}[cs]||'status-open';
+    const od=cs==='Overdue';
+    const fhigh=+r.findingsHigh||0;
+    return `<tr class="${od?'row-overdue':''}">
+      <td style="font-family:monospace;font-size:12px;color:var(--gray-400)">${r.id}</td>
+      <td style="font-size:12px">${r.auditType||'—'}</td>
+      <td class="wrap" style="max-width:200px;white-space:normal"><strong>${r.title||'—'}</strong>${r.scope?`<br><span style="font-size:11px;color:var(--gray-400)">${r.scope.slice(0,80)}</span>`:''}</td>
+      <td style="color:${od?'#DC2626':'inherit'};font-weight:${od?700:400};white-space:nowrap">${SMS.fmtDate(r.plannedDate)}</td>
+      <td style="white-space:nowrap">${SMS.fmtDate(r.actualDate)}</td>
+      <td>${r.auditor||'—'}</td>
+      <td>${r.area||'—'}</td>
+      <td>${r.findingsTotal||'—'}${fhigh>0?` <span class="badge band-high" style="font-size:10px">${fhigh} High</span>`:''}</td>
+      <td><span class="badge ${stCls}">${cs}</span></td>
+      <td style="font-size:12px;color:var(--gray-400)">${r.carRefs||'—'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost" onclick="openForm('${r.id}')">Edit</button>
+        <button class="btn btn-ghost" style="color:#DC2626" onclick="openDelete('${r.id}')">Del</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openForm(id){
+  editId=id||null;
+  document.getElementById('modalTitle').textContent=id?'Edit Audit':'Add Audit / Inspection';
+  const r=id?SMS.get('audits').find(x=>x.id===id):{};
+  const set=(i,v)=>{const el=document.getElementById(i);if(el)el.value=v!==undefined&&v!==null?v:'';};
+  set('fType',r.auditType||'Internal Audit'); set('fTitle',r.title);
+  set('fScope',r.scope); set('fPlanned',r.plannedDate); set('fActual',r.actualDate);
+  set('fAuditor',r.auditor); set('fArea',r.area); set('fStatus',r.status||'Planned');
+  set('fFTotal',r.findingsTotal||0); set('fFHigh',r.findingsHigh||0);
+  set('fFMed',r.findingsMedium||0); set('fFLow',r.findingsLow||0);
+  set('fFindings',r.findingsSummary); set('fRecs',r.recommendations);
+  set('fCARs',r.carRefs); set('fNotes',r.notes);
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+function closeForm(){document.getElementById('modalOverlay').classList.add('hidden');editId=null;}
+function collectForm(){
+  return {
+    auditType:document.getElementById('fType').value, title:document.getElementById('fTitle').value,
+    scope:document.getElementById('fScope').value, plannedDate:document.getElementById('fPlanned').value,
+    actualDate:document.getElementById('fActual').value, auditor:document.getElementById('fAuditor').value,
+    area:document.getElementById('fArea').value, status:document.getElementById('fStatus').value,
+    findingsTotal:document.getElementById('fFTotal').value, findingsHigh:document.getElementById('fFHigh').value,
+    findingsMedium:document.getElementById('fFMed').value, findingsLow:document.getElementById('fFLow').value,
+    findingsSummary:document.getElementById('fFindings').value, recommendations:document.getElementById('fRecs').value,
+    carRefs:document.getElementById('fCARs').value, notes:document.getElementById('fNotes').value
+  };
+}
+function saveForm(){
+  const f=collectForm();
+  if(!f.title.trim()){alert('Title is required.');return;}
+  if(editId) SMS.update('audits',editId,f); else SMS.add('audits',f);
+  closeForm(); render();
+}
+function openCAR(){
+  const f=collectForm();
+  if(!f.title.trim()){alert('Title is required.');return;}
+  let rec; if(editId){rec=SMS.update('audits',editId,f);}else{rec=SMS.add('audits',f);}
+  closeForm(); render();
+  const params=new URLSearchParams({source:'Audit',sourceRef:rec.id,desc:('Audit findings: '+f.title).slice(0,120)});
+  window.location.href='corrective-actions.html?'+params.toString();
+}
+function openDelete(id){deleteId=id;document.getElementById('delOverlay').classList.remove('hidden');}
+function closeDelete(){document.getElementById('delOverlay').classList.add('hidden');deleteId=null;}
+function confirmDelete(){if(deleteId){SMS.remove('audits',deleteId);deleteId=null;}closeDelete();render();}
+function doExport(){
+  SMS.exportXlsx(SMS.get('audits').map(r=>({
+    ID:r.id,'Audit Type':r.auditType,Title:r.title,Scope:r.scope,
+    'Planned Date':r.plannedDate,'Actual Date':r.actualDate,Auditor:r.auditor,Area:r.area,Status:computeStatus(r),
+    'Total Findings':r.findingsTotal,'High Findings':r.findingsHigh,'Medium Findings':r.findingsMedium,'Low Findings':r.findingsLow,
+    'Findings Summary':r.findingsSummary,Recommendations:r.recommendations,'CAR Refs':r.carRefs,Notes:r.notes,
+    Created:r.created,Updated:r.updated
+  })),'audit-register.xlsx','Audits');
+}
+function doImport(input){
+  if(!input.files[0]) return;
+  SMS.importXlsx(input.files[0],rows=>{
+    rows.forEach(row=>{SMS.add('audits',{auditType:row['Audit Type']||'Internal Audit',title:row.Title||row.title||'',scope:row.Scope||'',plannedDate:row['Planned Date']||'',actualDate:row['Actual Date']||'',auditor:row.Auditor||'',area:row.Area||'',status:row.Status||'Planned',findingsTotal:row['Total Findings']||0,findingsHigh:row['High Findings']||0,findingsMedium:row['Medium Findings']||0,findingsLow:row['Low Findings']||0,findingsSummary:row['Findings Summary']||'',recommendations:row.Recommendations||'',carRefs:row['CAR Refs']||'',notes:row.Notes||''});});
+    input.value=''; render();
+  });
+}
+render();
+</script>
+</body></html>

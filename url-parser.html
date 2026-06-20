@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>URL Parser — Excel Edition</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- SheetJS for Excel parsing -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>
+        <span>URL Parser</span>
+      </div>
+      <p class="tagline">Upload an Excel file — instantly parse every URL into its components</p>
+      <a href="flowchart.html" style="margin-left:auto; display:inline-flex; align-items:center; gap:6px; color:#fff; font-size:13px; font-weight:600; text-decoration:none; opacity:.85; transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.85">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Risk Assessment Flowchart
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- ── Upload card ── -->
+    <section class="card upload-card" id="uploadSection">
+      <div class="drop-zone" id="dropZone">
+        <svg class="drop-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <p class="drop-title">Drop your Excel file here</p>
+        <p class="drop-sub">or</p>
+        <label class="btn btn-primary" for="fileInput">Browse file</label>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" hidden />
+        <p class="drop-hint">Supports <strong>.xlsx</strong>, <strong>.xls</strong>, <strong>.csv</strong></p>
+      </div>
+
+      <div class="config-row">
+        <div class="config-group">
+          <label for="sheetSelect">Sheet</label>
+          <select id="sheetSelect" disabled>
+            <option>— load a file first —</option>
+          </select>
+        </div>
+        <div class="config-group">
+          <label for="urlColInput">URL column header <span class="hint">(leave blank to auto-detect)</span></label>
+          <input type="text" id="urlColInput" placeholder="e.g. URL" />
+        </div>
+        <div class="config-group checkbox-group">
+          <label>
+            <input type="checkbox" id="firstRowHeader" checked />
+            First row is a header
+          </label>
+        </div>
+        <button class="btn btn-primary" id="parseBtn" disabled>Parse URLs</button>
+      </div>
+
+      <div class="sample-hint">
+        No file yet? <a href="sample_urls.xlsx" download>Download sample_urls.xlsx</a> and try it.
+      </div>
+    </section>
+
+    <!-- ── Stats bar ── -->
+    <section class="stats-bar hidden" id="statsBar">
+      <div class="stat"><span class="stat-value" id="statTotal">0</span><span class="stat-label">URLs found</span></div>
+      <div class="stat"><span class="stat-value" id="statValid">0</span><span class="stat-label">Valid</span></div>
+      <div class="stat"><span class="stat-value" id="statInvalid">0</span><span class="stat-label">Invalid / blank</span></div>
+      <div class="stat"><span class="stat-value" id="statSchemes">—</span><span class="stat-label">Unique schemes</span></div>
+      <div class="stat"><span class="stat-value" id="statHosts">—</span><span class="stat-label">Unique hosts</span></div>
+    </section>
+
+    <!-- ── Toolbar ── -->
+    <section class="toolbar hidden" id="toolbar">
+      <div class="toolbar-left">
+        <input type="search" id="filterInput" placeholder="Filter by any field…" />
+        <select id="schemeFilter">
+          <option value="">All schemes</option>
+        </select>
+      </div>
+      <div class="toolbar-right">
+        <button class="btn btn-outline" id="copyBtn">Copy table</button>
+        <button class="btn btn-outline" id="exportBtn">Export CSV</button>
+        <button class="btn btn-outline" id="exportXlsxBtn">Export Excel</button>
+        <button class="btn btn-ghost" id="resetBtn">Reset</button>
+      </div>
+    </section>
+
+    <!-- ── Results table ── -->
+    <section class="card table-card hidden" id="tableCard">
+      <div class="table-wrap">
+        <table id="resultsTable">
+          <thead>
+            <tr>
+              <th data-col="row">#</th>
+              <th data-col="raw" class="sortable">Original URL <span class="sort-icon">⇅</span></th>
+              <th data-col="scheme" class="sortable">Scheme <span class="sort-icon">⇅</span></th>
+              <th data-col="username">User</th>
+              <th data-col="password">Pass</th>
+              <th data-col="hostname" class="sortable">Hostname <span class="sort-icon">⇅</span></th>
+              <th data-col="port">Port</th>
+              <th data-col="pathname">Path</th>
+              <th data-col="search">Query string</th>
+              <th data-col="params">Params (key=value)</th>
+              <th data-col="hash">Fragment</th>
+              <th data-col="valid">Valid?</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span id="rowCount">0 rows</span>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </section>
+
+    <!-- ── Detail panel (click a row) ── -->
+    <div class="detail-overlay hidden" id="detailOverlay">
+      <div class="detail-panel" id="detailPanel">
+        <button class="detail-close" id="detailClose">✕</button>
+        <h2 class="detail-title">URL Detail</h2>
+        <pre class="detail-url" id="detailUrl"></pre>
+        <table class="detail-table" id="detailTable"></table>
+        <div class="detail-params" id="detailParams"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="site-footer">
+    URL Parser — runs entirely in your browser. No data is uploaded.
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,258 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Risk Register — TP SMS</title>
+<link rel="stylesheet" href="styles.css"/><link rel="stylesheet" href="sms.css"/>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+<header class="site-header"><div class="header-inner">
+<div class="logo"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>TP Risk Management SMS</span></div>
+<p class="tagline">Risk Register — hazard identification and risk assessment</p>
+</div></header>
+<nav class="module-nav"><div class="module-nav-inner">
+<a href="index.html">⬛ Hub</a>
+<a href="risk-register.html" class="active">⚠️ Risk Register</a>
+<a href="incident-report.html">🔴 Incidents</a>
+<a href="corrective-actions.html">✅ Corrective Actions</a>
+<a href="safety-dashboard.html">📊 Dashboard</a>
+<a href="audit-inspection.html">📋 Audits</a>
+<span class="module-nav-sep">|</span>
+<a href="flowchart.html">⬡ SFARP</a>
+<a href="GOHS4.1.8.X_FARSI_Control_Effectiveness_Calculator_v0.2.html">⬡ FARSI</a>
+</div></nav>
+<main class="container">
+<!-- Toolbar -->
+<div class="toolbar">
+<div class="toolbar-left">
+<button class="btn btn-primary" onclick="openForm()">+ Add Risk</button>
+<input type="text" id="filterInput" placeholder="Filter risks…" oninput="render()"/>
+<select id="bandFilter" onchange="render()"><option value="">All bands</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
+<select id="statusFilter" onchange="render()"><option value="">All statuses</option><option>Open</option><option>Under Review</option><option>Closed</option></select>
+</div>
+<div class="toolbar-right">
+<button class="btn btn-outline" onclick="doExport()">↓ Export Excel</button>
+<label class="btn btn-outline" style="cursor:pointer">↑ Import Excel<input type="file" accept=".xlsx,.xls,.csv" hidden onchange="doImport(this)"/></label>
+</div>
+</div>
+<!-- Stats bar -->
+<div class="stats-bar" id="statsBar">
+<div class="stat"><span class="stat-value" id="stTotal">0</span><span class="stat-label">Total</span></div>
+<div class="stat"><span class="stat-value" style="color:#7F1D1D" id="stCrit">0</span><span class="stat-label">Critical</span></div>
+<div class="stat"><span class="stat-value" style="color:#92400E" id="stHigh">0</span><span class="stat-label">High</span></div>
+<div class="stat"><span class="stat-value" style="color:#1E3A8A" id="stMed">0</span><span class="stat-label">Medium</span></div>
+<div class="stat"><span class="stat-value" style="color:#14532D" id="stLow">0</span><span class="stat-label">Low</span></div>
+<div class="stat"><span class="stat-value" id="stOpen">0</span><span class="stat-label">Open</span></div>
+</div>
+<!-- Table -->
+<div class="card table-card">
+<div class="table-wrap">
+<table id="riskTable">
+<thead><tr>
+<th>ID</th><th>Hazard / Risk</th><th>Category</th><th>Location</th>
+<th>Inherent</th><th>Controls</th><th>Residual</th><th>Owner</th><th>Review</th><th>Status</th><th></th>
+</tr></thead>
+<tbody id="tbody"></tbody>
+</table>
+</div>
+<div class="table-footer"><span id="rowCount">0 risks</span></div>
+</div>
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay hidden" id="modalOverlay">
+<div class="modal">
+<div class="modal-header"><span class="modal-title" id="modalTitle">Add Risk</span><button class="modal-close" onclick="closeForm()">×</button></div>
+<div class="modal-body">
+<div class="form-grid">
+<div class="form-group"><label>Hazard / Risk Description *</label><textarea id="fHazard" rows="2" placeholder="Describe the hazard and potential harm…"></textarea></div>
+<div class="form-group"><label>Activity / Process</label><input type="text" id="fActivity" placeholder="What work activity?"/></div>
+<div class="form-group"><label>Category</label><select id="fCategory"><option>Physical</option><option>Chemical</option><option>Biological</option><option>Ergonomic</option><option>Psychosocial</option><option>Electrical</option><option>Fire / Explosion</option><option>Environmental</option><option>Radiation</option><option>Other</option></select></div>
+<div class="form-group"><label>Location / Area</label><input type="text" id="fLocation" placeholder="Work site, area or task"/></div>
+<div class="form-group"><label>Date Identified</label><input type="date" id="fDate"/></div>
+<div class="form-group"><label>Status</label><select id="fStatus"><option>Open</option><option>Under Review</option><option>Closed</option></select></div>
+</div>
+<hr style="margin:18px 0;border:none;border-top:1px solid var(--gray-200)"/>
+<p style="font-size:12px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">Inherent Risk (before controls)</p>
+<div class="form-grid">
+<div class="form-group"><label>Likelihood (1–5)</label><select id="fL"><option value="">—</option><option value="1">1 — Rare</option><option value="2">2 — Unlikely</option><option value="3">3 — Possible</option><option value="4">4 — Likely</option><option value="5">5 — Almost Certain</option></select></div>
+<div class="form-group"><label>Consequence (1–5)</label><select id="fC"><option value="">—</option><option value="1">1 — Insignificant</option><option value="2">2 — Minor</option><option value="3">3 — Moderate</option><option value="4">4 — Major</option><option value="5">5 — Catastrophic</option></select></div>
+<div class="form-group span2"><label>Inherent Score</label><div id="inherentScore" style="padding:8px 12px;background:var(--gray-100);border-radius:6px;font-weight:700;font-size:14px">Select likelihood &amp; consequence</div></div>
+<div class="form-group span2"><label>Existing Controls</label><textarea id="fControls" rows="3" placeholder="List existing controls in place…"></textarea></div>
+<div class="form-group"><label>Control Owner</label><input type="text" id="fOwner" placeholder="Name or role"/></div>
+<div class="form-group"><label>Review Date</label><input type="date" id="fReview"/></div>
+</div>
+<hr style="margin:18px 0;border:none;border-top:1px solid var(--gray-200)"/>
+<p style="font-size:12px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">Residual Risk (after controls)</p>
+<div class="form-grid">
+<div class="form-group"><label>Residual Likelihood (1–5)</label><select id="fRL"><option value="">—</option><option value="1">1 — Rare</option><option value="2">2 — Unlikely</option><option value="3">3 — Possible</option><option value="4">4 — Likely</option><option value="5">5 — Almost Certain</option></select></div>
+<div class="form-group"><label>Residual Consequence (1–5)</label><select id="fRC"><option value="">—</option><option value="1">1 — Insignificant</option><option value="2">2 — Minor</option><option value="3">3 — Moderate</option><option value="4">4 — Major</option><option value="5">5 — Catastrophic</option></select></div>
+<div class="form-group span2"><label>Residual Score</label><div id="residualScore" style="padding:8px 12px;background:var(--gray-100);border-radius:6px;font-weight:700;font-size:14px">Select residual likelihood &amp; consequence</div></div>
+<div class="form-group span2"><label>Additional Controls Required</label><textarea id="fAddControls" rows="2" placeholder="Any further controls needed to reach ALARP…"></textarea></div>
+<div class="form-group span2"><label>Notes</label><textarea id="fNotes" rows="2"></textarea></div>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-outline" onclick="closeForm()">Cancel</button>
+<button class="btn btn-primary" onclick="saveForm()">Save Risk</button>
+</div>
+</div>
+</div>
+
+<!-- Delete confirm -->
+<div class="modal-overlay hidden" id="delOverlay">
+<div class="modal" style="max-width:360px">
+<div class="modal-header"><span class="modal-title">Delete Risk?</span><button class="modal-close" onclick="closeDelete()">×</button></div>
+<div class="modal-body"><p style="color:var(--gray-600)">This will permanently remove the risk record. This action cannot be undone.</p></div>
+<div class="modal-footer"><button class="btn btn-outline" onclick="closeDelete()">Cancel</button><button class="btn btn-primary" style="background:#DC2626" onclick="confirmDelete()">Delete</button></div>
+</div>
+</div>
+
+<footer class="site-footer">TP Risk Management SMS — Risk Register</footer>
+<script src="sms-shared.js"></script>
+<script>
+let editId=null, deleteId=null;
+const cats=['Physical','Chemical','Biological','Ergonomic','Psychosocial','Electrical','Fire / Explosion','Environmental','Radiation','Other'];
+
+function scoreBadge(l,c){
+  const s=SMS.riskScore(l,c); if(!s) return '<span style="color:var(--gray-400)">—</span>';
+  const b=SMS.riskBand(s);
+  return `<span class="badge ${b.cls}" style="font-size:13px">${s} — ${b.label}</span>`;
+}
+
+function render(){
+  const q=(document.getElementById('filterInput').value||'').toLowerCase();
+  const bf=document.getElementById('bandFilter').value;
+  const sf=document.getElementById('statusFilter').value;
+  let data=SMS.get('risks');
+  if(q) data=data.filter(r=>(r.hazardDescription+r.location+r.category+r.id).toLowerCase().includes(q));
+  const resBand=r=>SMS.riskBand(SMS.riskScore(r.resLikelihood||r.likelihood,r.resConsequence||r.consequence)).label;
+  if(bf) data=data.filter(r=>resBand(r)===bf);
+  if(sf) data=data.filter(r=>r.status===sf);
+
+  // stats
+  const all=SMS.get('risks');
+  document.getElementById('stTotal').textContent=all.length;
+  document.getElementById('stCrit').textContent=all.filter(r=>resBand(r)==='Critical').length;
+  document.getElementById('stHigh').textContent=all.filter(r=>resBand(r)==='High').length;
+  document.getElementById('stMed').textContent=all.filter(r=>resBand(r)==='Medium').length;
+  document.getElementById('stLow').textContent=all.filter(r=>resBand(r)==='Low').length;
+  document.getElementById('stOpen').textContent=all.filter(r=>r.status!=='Closed').length;
+  document.getElementById('rowCount').textContent=data.length+' risk'+(data.length!==1?'s':'');
+
+  const tb=document.getElementById('tbody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="11"><div class="empty-state"><span class="empty-state-icon">⚠️</span><p>No risks found. Click "+ Add Risk" to get started.</p></div></td></tr>';return;}
+  tb.innerHTML=data.map(r=>{
+    const iS=SMS.riskScore(r.likelihood,r.consequence);
+    const rS=SMS.riskScore(r.resLikelihood||r.likelihood,r.resConsequence||r.consequence);
+    const rb=SMS.riskBand(rS);
+    const overdue=SMS.isOverdue(r.reviewDate,r.status);
+    const rowCls=overdue?'row-overdue':rb.label==='Critical'?'row-critical':'';
+    const statusCls=r.status==='Closed'?'status-closed':r.status==='Under Review'?'status-in-progress':'status-open';
+    return `<tr class="${rowCls}">
+      <td style="font-family:monospace;font-size:12px;color:var(--gray-400)">${r.id}</td>
+      <td class="wrap" style="max-width:220px;white-space:normal">${r.hazardDescription||'—'}</td>
+      <td>${r.category||'—'}</td>
+      <td>${r.location||'—'}</td>
+      <td>${scoreBadge(r.likelihood,r.consequence)}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.existingControls||''}">${r.existingControls||'—'}</td>
+      <td>${scoreBadge(r.resLikelihood||r.likelihood,r.resConsequence||r.consequence)}</td>
+      <td>${r.controlOwner||'—'}</td>
+      <td style="color:${overdue?'#DC2626':'inherit'}">${SMS.fmtDate(r.reviewDate)}</td>
+      <td><span class="badge ${statusCls}">${r.status||'Open'}</span></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost" onclick="openForm('${r.id}')">Edit</button>
+        <button class="btn btn-ghost" style="color:#DC2626" onclick="openDelete('${r.id}')">Del</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openForm(id){
+  editId=id||null;
+  document.getElementById('modalTitle').textContent=id?'Edit Risk':'Add Risk';
+  const r=id?SMS.get('risks').find(x=>x.id===id):{};
+  const set=(i,v)=>{ const el=document.getElementById(i); if(el) el.value=v||''; };
+  set('fHazard',r.hazardDescription); set('fActivity',r.activity); set('fCategory',r.category||'Physical');
+  set('fLocation',r.location); set('fDate',r.dateIdentified||SMS.today()); set('fStatus',r.status||'Open');
+  set('fL',r.likelihood); set('fC',r.consequence); set('fControls',r.existingControls);
+  set('fOwner',r.controlOwner); set('fReview',r.reviewDate);
+  set('fRL',r.resLikelihood); set('fRC',r.resConsequence);
+  set('fAddControls',r.additionalControls); set('fNotes',r.notes);
+  updateScores();
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+function closeForm(){ document.getElementById('modalOverlay').classList.add('hidden'); editId=null; }
+
+function updateScores(){
+  const iS=SMS.riskScore(document.getElementById('fL').value,document.getElementById('fC').value);
+  const rS=SMS.riskScore(document.getElementById('fRL').value,document.getElementById('fRC').value);
+  const fmt=(s,el)=>{
+    const b=SMS.riskBand(s);
+    document.getElementById(el).innerHTML=s?`<span class="badge ${b.cls}" style="font-size:14px">${s} — ${b.label}</span>`:'<span style="color:var(--gray-400)">Select likelihood &amp; consequence</span>';
+  };
+  fmt(iS,'inherentScore'); fmt(rS,'residualScore');
+}
+['fL','fC','fRL','fRC'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('change',updateScores); });
+
+function saveForm(){
+  const h=document.getElementById('fHazard').value.trim();
+  if(!h){alert('Hazard description is required.');return;}
+  const rec={
+    hazardDescription:h, activity:document.getElementById('fActivity').value,
+    category:document.getElementById('fCategory').value, location:document.getElementById('fLocation').value,
+    dateIdentified:document.getElementById('fDate').value, status:document.getElementById('fStatus').value,
+    likelihood:document.getElementById('fL').value, consequence:document.getElementById('fC').value,
+    existingControls:document.getElementById('fControls').value, controlOwner:document.getElementById('fOwner').value,
+    reviewDate:document.getElementById('fReview').value,
+    resLikelihood:document.getElementById('fRL').value, resConsequence:document.getElementById('fRC').value,
+    additionalControls:document.getElementById('fAddControls').value, notes:document.getElementById('fNotes').value,
+  };
+  if(editId) SMS.update('risks',editId,rec); else SMS.add('risks',rec);
+  closeForm(); render();
+}
+
+function openDelete(id){ deleteId=id; document.getElementById('delOverlay').classList.remove('hidden'); }
+function closeDelete(){ document.getElementById('delOverlay').classList.add('hidden'); deleteId=null; }
+function confirmDelete(){ if(deleteId){SMS.remove('risks',deleteId);deleteId=null;} closeDelete(); render(); }
+
+function doExport(){
+  const data=SMS.get('risks').map(r=>({
+    ID:r.id,'Hazard Description':r.hazardDescription,Category:r.category,Location:r.location,
+    Activity:r.activity,'Date Identified':r.dateIdentified,
+    Likelihood:r.likelihood,Consequence:r.consequence,'Inherent Score':SMS.riskScore(r.likelihood,r.consequence),
+    'Inherent Band':SMS.riskBand(SMS.riskScore(r.likelihood,r.consequence)).label,
+    'Existing Controls':r.existingControls,'Control Owner':r.controlOwner,'Review Date':r.reviewDate,
+    'Residual Likelihood':r.resLikelihood,'Residual Consequence':r.resConsequence,
+    'Residual Score':SMS.riskScore(r.resLikelihood||r.likelihood,r.resConsequence||r.consequence),
+    'Residual Band':SMS.riskBand(SMS.riskScore(r.resLikelihood||r.likelihood,r.resConsequence||r.consequence)).label,
+    'Additional Controls':r.additionalControls,Status:r.status,Notes:r.notes,
+    Created:r.created,Updated:r.updated
+  }));
+  SMS.exportXlsx(data,'risk-register.xlsx','Risk Register');
+}
+function doImport(input){
+  if(!input.files[0]) return;
+  SMS.importXlsx(input.files[0],rows=>{
+    rows.forEach(row=>{
+      SMS.add('risks',{
+        hazardDescription:row['Hazard Description']||row.hazardDescription||'',
+        category:row.Category||row.category||'Other',location:row.Location||row.location||'',
+        activity:row.Activity||row.activity||'',dateIdentified:row['Date Identified']||row.dateIdentified||'',
+        likelihood:row.Likelihood||row.likelihood||'',consequence:row.Consequence||row.consequence||'',
+        existingControls:row['Existing Controls']||row.existingControls||'',
+        controlOwner:row['Control Owner']||row.controlOwner||'',reviewDate:row['Review Date']||row.reviewDate||'',
+        resLikelihood:row['Residual Likelihood']||row.resLikelihood||'',
+        resConsequence:row['Residual Consequence']||row.resConsequence||'',
+        additionalControls:row['Additional Controls']||row.additionalControls||'',
+        status:row.Status||row.status||'Open',notes:row.Notes||row.notes||''
+      });
+    });
+    input.value=''; render();
+  });
+}
+
+render();
+</script>
+</body></html>

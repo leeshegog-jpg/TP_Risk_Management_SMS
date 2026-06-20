@@ -1,0 +1,218 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Incident Log — TP SMS</title>
+<link rel="stylesheet" href="styles.css"/><link rel="stylesheet" href="sms.css"/>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+<header class="site-header"><div class="header-inner">
+<div class="logo"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>TP Risk Management SMS</span></div>
+<p class="tagline">Incident &amp; Near-Miss Log</p>
+</div></header>
+<nav class="module-nav"><div class="module-nav-inner">
+<a href="index.html">⬛ Hub</a><a href="risk-register.html">⚠️ Risk Register</a>
+<a href="incident-report.html" class="active">🔴 Incidents</a>
+<a href="corrective-actions.html">✅ Corrective Actions</a>
+<a href="safety-dashboard.html">📊 Dashboard</a>
+<a href="audit-inspection.html">📋 Audits</a>
+</div></nav>
+<main class="container">
+<div class="toolbar">
+<div class="toolbar-left">
+<button class="btn btn-primary" onclick="openForm()">+ Report Incident</button>
+<input type="text" id="filterInput" placeholder="Filter incidents…" oninput="render()"/>
+<select id="typeFilter" onchange="render()"><option value="">All types</option><option>Injury</option><option>Near Miss</option><option>Property Damage</option><option>Environmental</option><option>Security</option><option>Other</option></select>
+<select id="statusFilter" onchange="render()"><option value="">All statuses</option><option>Open</option><option>Under Investigation</option><option>Closed</option></select>
+</div>
+<div class="toolbar-right">
+<button class="btn btn-outline" onclick="doExport()">↓ Export Excel</button>
+<label class="btn btn-outline" style="cursor:pointer">↑ Import<input type="file" accept=".xlsx,.xls,.csv" hidden onchange="doImport(this)"/></label>
+</div>
+</div>
+<div class="stats-bar">
+<div class="stat"><span class="stat-value" id="stTotal">0</span><span class="stat-label">Total</span></div>
+<div class="stat"><span class="stat-value" style="color:#DC2626" id="stInjury">0</span><span class="stat-label">Injuries</span></div>
+<div class="stat"><span class="stat-value" style="color:#D97706" id="stNear">0</span><span class="stat-label">Near Misses</span></div>
+<div class="stat"><span class="stat-value" style="color:#7C3AED" id="stProp">0</span><span class="stat-label">Property</span></div>
+<div class="stat"><span class="stat-value" id="stOpen">0</span><span class="stat-label">Open</span></div>
+<div class="stat"><span class="stat-value" id="stMth">0</span><span class="stat-label">This Month</span></div>
+</div>
+<div class="card table-card">
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>Date</th><th>Type</th><th>Severity</th><th>Description</th><th>Location</th><th>Reporter</th><th>Investigation</th><th>Status</th><th></th></tr></thead>
+<tbody id="tbody"></tbody>
+</table></div>
+<div class="table-footer"><span id="rowCount">0 incidents</span></div>
+</div>
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay hidden" id="modalOverlay">
+<div class="modal">
+<div class="modal-header"><span class="modal-title" id="modalTitle">Report Incident</span><button class="modal-close" onclick="closeForm()">×</button></div>
+<div class="modal-body">
+<div class="form-grid">
+<div class="form-group"><label>Date &amp; Time of Incident *</label><input type="datetime-local" id="fDateTime"/></div>
+<div class="form-group"><label>Date Reported</label><input type="date" id="fReportDate"/></div>
+<div class="form-group"><label>Incident Type *</label><select id="fType"><option>Injury</option><option>Near Miss</option><option>Property Damage</option><option>Environmental</option><option>Security</option><option>Other</option></select></div>
+<div class="form-group"><label>Severity (1–5)</label><select id="fSev"><option value="1">1 — Insignificant</option><option value="2">2 — Minor</option><option value="3">3 — Moderate</option><option value="4">4 — Major</option><option value="5">5 — Catastrophic</option></select></div>
+<div class="form-group"><label>Location / Area</label><input type="text" id="fLocation" placeholder="Where did it occur?"/></div>
+<div class="form-group"><label>Reporter Name</label><input type="text" id="fReporter" placeholder="Who reported?"/></div>
+<div class="form-group span2"><label>Description of Incident *</label><textarea id="fDesc" rows="3" placeholder="What happened? Describe the sequence of events…"></textarea></div>
+<div class="form-group span2"><label>Injuries / Health Effects</label><textarea id="fInjuries" rows="2" placeholder="Nature and extent of any injuries or health effects…"></textarea></div>
+<div class="form-group"><label>Witnesses</label><input type="text" id="fWitnesses" placeholder="Names of any witnesses"/></div>
+<div class="form-group"><label>Immediate Actions Taken</label><textarea id="fImmediate" rows="2" placeholder="Actions taken immediately after the incident…"></textarea></div>
+</div>
+<hr style="margin:16px 0;border:none;border-top:1px solid var(--gray-200)"/>
+<p style="font-size:12px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">Investigation</p>
+<div class="form-grid">
+<div class="form-group"><label>Immediate Cause</label><textarea id="fImmCause" rows="2" placeholder="The direct cause — what failed or what act occurred?"></textarea></div>
+<div class="form-group"><label>Underlying / Root Cause</label><textarea id="fRootCause" rows="2" placeholder="The deeper systemic cause…"></textarea></div>
+<div class="form-group"><label>Investigation Status</label><select id="fInvStatus"><option>Not Started</option><option>In Progress</option><option>Complete</option></select></div>
+<div class="form-group"><label>Investigation Completion Date</label><input type="date" id="fInvDate"/></div>
+<div class="form-group span2"><label>Lessons Learned</label><textarea id="fLessons" rows="2" placeholder="What was learned? How can this be prevented?"></textarea></div>
+<div class="form-group"><label>Linked CAR IDs</label><input type="text" id="fCARs" placeholder="e.g. C0001, C0002"/></div>
+<div class="form-group"><label>Status</label><select id="fStatus"><option>Open</option><option>Under Investigation</option><option>Closed</option></select></div>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-outline" onclick="closeForm()">Cancel</button>
+<button class="btn btn-primary" onclick="openCAR()" title="Save and create a Corrective Action" style="background:#7C3AED">Save &amp; Create CAR</button>
+<button class="btn btn-primary" onclick="saveForm()">Save Incident</button>
+</div>
+</div>
+</div>
+
+<div class="modal-overlay hidden" id="delOverlay">
+<div class="modal" style="max-width:360px">
+<div class="modal-header"><span class="modal-title">Delete Incident?</span><button class="modal-close" onclick="closeDelete()">×</button></div>
+<div class="modal-body"><p style="color:var(--gray-600)">Permanently remove this incident record. Cannot be undone.</p></div>
+<div class="modal-footer"><button class="btn btn-outline" onclick="closeDelete()">Cancel</button><button class="btn btn-primary" style="background:#DC2626" onclick="confirmDelete()">Delete</button></div>
+</div>
+</div>
+
+<footer class="site-footer">TP Risk Management SMS — Incident Log</footer>
+<script src="sms-shared.js"></script>
+<script>
+let editId=null,deleteId=null;
+const SEV_LABEL=['','Insignificant','Minor','Moderate','Major','Catastrophic'];
+
+function render(){
+  const q=(document.getElementById('filterInput').value||'').toLowerCase();
+  const tf=document.getElementById('typeFilter').value;
+  const sf=document.getElementById('statusFilter').value;
+  let data=SMS.get('incidents');
+  if(q) data=data.filter(r=>(r.description+r.location+r.incidentType+r.id).toLowerCase().includes(q));
+  if(tf) data=data.filter(r=>r.incidentType===tf);
+  if(sf) data=data.filter(r=>r.status===sf);
+
+  const all=SMS.get('incidents');
+  const now=new Date();
+  document.getElementById('stTotal').textContent=all.length;
+  document.getElementById('stInjury').textContent=all.filter(r=>r.incidentType==='Injury').length;
+  document.getElementById('stNear').textContent=all.filter(r=>r.incidentType==='Near Miss').length;
+  document.getElementById('stProp').textContent=all.filter(r=>r.incidentType==='Property Damage').length;
+  document.getElementById('stOpen').textContent=all.filter(r=>r.status!=='Closed').length;
+  document.getElementById('stMth').textContent=all.filter(r=>{const d=new Date(r.dateTime||r.created);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).length;
+  document.getElementById('rowCount').textContent=data.length+' incident'+(data.length!==1?'s':'');
+
+  const TYPE_COLOR={Injury:'#DC2626','Near Miss':'#D97706','Property Damage':'#7C3AED',Environmental:'#16A34A',Security:'#2563EB',Other:'#6B7280'};
+  const tb=document.getElementById('tbody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="10"><div class="empty-state"><span class="empty-state-icon">🔴</span><p>No incidents recorded. Click "+ Report Incident" to add one.</p></div></td></tr>';return;}
+  tb.innerHTML=data.map(r=>{
+    const sc=r.severity||1;
+    const stCls=r.status==='Closed'?'status-closed':r.status==='Under Investigation'?'status-in-progress':'status-open';
+    return `<tr>
+      <td style="font-family:monospace;font-size:12px;color:var(--gray-400)">${r.id}</td>
+      <td style="white-space:nowrap">${SMS.fmtDate(r.dateTime)}</td>
+      <td><span class="badge" style="background:${TYPE_COLOR[r.incidentType]||'#6B7280'}22;color:${TYPE_COLOR[r.incidentType]||'#6B7280'}">${r.incidentType||'—'}</span></td>
+      <td><span class="badge sev-${sc}">${sc} — ${SEV_LABEL[sc]||''}</span></td>
+      <td class="wrap" style="max-width:220px;white-space:normal">${r.description||'—'}</td>
+      <td>${r.location||'—'}</td>
+      <td>${r.reporterName||'—'}</td>
+      <td><span class="badge status-${(r.invStatus||'not-started').toLowerCase().replace(/ /g,'-')}">${r.invStatus||'Not Started'}</span></td>
+      <td><span class="badge ${stCls}">${r.status||'Open'}</span></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost" onclick="openForm('${r.id}')">Edit</button>
+        <button class="btn btn-ghost" style="color:#DC2626" onclick="openDelete('${r.id}')">Del</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openForm(id){
+  editId=id||null;
+  document.getElementById('modalTitle').textContent=id?'Edit Incident':'Report Incident';
+  const r=id?SMS.get('incidents').find(x=>x.id===id):{};
+  const set=(i,v)=>{const el=document.getElementById(i);if(el)el.value=v||'';};
+  const now=new Date();
+  const dtDefault=now.toISOString().slice(0,16);
+  set('fDateTime',r.dateTime||dtDefault); set('fReportDate',r.reportDate||SMS.today());
+  set('fType',r.incidentType||'Injury'); set('fSev',r.severity||1);
+  set('fLocation',r.location); set('fReporter',r.reporterName);
+  set('fDesc',r.description); set('fInjuries',r.injuries);
+  set('fWitnesses',r.witnesses); set('fImmediate',r.immediateActions);
+  set('fImmCause',r.immediateCause); set('fRootCause',r.rootCause);
+  set('fInvStatus',r.invStatus||'Not Started'); set('fInvDate',r.invDate);
+  set('fLessons',r.lessonsLearned); set('fCARs',r.carRefs);
+  set('fStatus',r.status||'Open');
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+function closeForm(){document.getElementById('modalOverlay').classList.add('hidden');editId=null;}
+
+function collectForm(){
+  return {
+    dateTime:document.getElementById('fDateTime').value, reportDate:document.getElementById('fReportDate').value,
+    incidentType:document.getElementById('fType').value, severity:document.getElementById('fSev').value,
+    location:document.getElementById('fLocation').value, reporterName:document.getElementById('fReporter').value,
+    description:document.getElementById('fDesc').value, injuries:document.getElementById('fInjuries').value,
+    witnesses:document.getElementById('fWitnesses').value, immediateActions:document.getElementById('fImmediate').value,
+    immediateCause:document.getElementById('fImmCause').value, rootCause:document.getElementById('fRootCause').value,
+    invStatus:document.getElementById('fInvStatus').value, invDate:document.getElementById('fInvDate').value,
+    lessonsLearned:document.getElementById('fLessons').value, carRefs:document.getElementById('fCARs').value,
+    status:document.getElementById('fStatus').value
+  };
+}
+function saveForm(){
+  const f=collectForm();
+  if(!f.description.trim()){alert('Description is required.');return;}
+  if(editId) SMS.update('incidents',editId,f); else SMS.add('incidents',f);
+  closeForm(); render();
+}
+function openCAR(){
+  const f=collectForm();
+  if(!f.description.trim()){alert('Description is required.');return;}
+  let rec; if(editId){rec=SMS.update('incidents',editId,f);}else{rec=SMS.add('incidents',f);}
+  closeForm(); render();
+  const params=new URLSearchParams({source:'Incident',sourceRef:rec.id,desc:f.description.slice(0,120)});
+  window.location.href='corrective-actions.html?'+params.toString();
+}
+
+function openDelete(id){deleteId=id;document.getElementById('delOverlay').classList.remove('hidden');}
+function closeDelete(){document.getElementById('delOverlay').classList.add('hidden');deleteId=null;}
+function confirmDelete(){if(deleteId){SMS.remove('incidents',deleteId);deleteId=null;}closeDelete();render();}
+
+function doExport(){
+  SMS.exportXlsx(SMS.get('incidents').map(r=>({
+    ID:r.id,'Date/Time':r.dateTime,'Report Date':r.reportDate,'Type':r.incidentType,'Severity':r.severity,
+    Location:r.location,'Reporter':r.reporterName,'Description':r.description,'Injuries':r.injuries,
+    Witnesses:r.witnesses,'Immediate Actions':r.immediateActions,'Immediate Cause':r.immediateCause,
+    'Root Cause':r.rootCause,'Investigation Status':r.invStatus,'Investigation Date':r.invDate,
+    'Lessons Learned':r.lessonsLearned,'CAR Refs':r.carRefs,Status:r.status,
+    Created:r.created,Updated:r.updated
+  })),'incident-log.xlsx','Incidents');
+}
+function doImport(input){
+  if(!input.files[0]) return;
+  SMS.importXlsx(input.files[0],rows=>{
+    rows.forEach(row=>{SMS.add('incidents',{dateTime:row['Date/Time']||row.dateTime||'',reportDate:row['Report Date']||'',incidentType:row.Type||row.incidentType||'Other',severity:row.Severity||row.severity||1,location:row.Location||row.location||'',reporterName:row.Reporter||row.reporterName||'',description:row.Description||row.description||'',injuries:row.Injuries||'',witnesses:row.Witnesses||'',immediateActions:row['Immediate Actions']||'',immediateCause:row['Immediate Cause']||'',rootCause:row['Root Cause']||'',invStatus:row['Investigation Status']||'Not Started',lessonsLearned:row['Lessons Learned']||'',carRefs:row['CAR Refs']||'',status:row.Status||'Open'});});
+    input.value=''; render();
+  });
+}
+
+// Pre-fill from query string (from incident page "Create CAR" redirect back)
+render();
+</script>
+</body></html>
