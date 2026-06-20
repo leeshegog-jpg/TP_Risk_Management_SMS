@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Figtree Risk Entry Review — VRTP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  :root {
+    --navy: #1F4E79; --mid: #2E75B6; --teal: #17375E;
+    --orange: #C55A11; --red: #C00000; --amber: #E26B0A;
+    --gold: #FFC000; --green: #375623; --greenlt: #70AD47;
+    --grey: #595959; --greylt: #F4F5F7; --greybd: #D6DCE4;
+    --pass-bg: #E8F5E9; --pass-bd: #70AD47; --pass-tx: #1B5E20;
+    --warn-bg: #FFF8E1; --warn-bd: #E26B0A; --warn-tx: #7B4000;
+    --fail-bg: #FFEBEE; --fail-bd: #C00000; --fail-tx: #7B0000;
+    --font: 'DM Sans', system-ui, sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+
+  body { font-family: var(--font); background: var(--greylt); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, var(--teal) 0%, var(--navy) 100%);
+    padding: 11px 20px; display: flex; align-items: center; gap: 14px;
+    flex-shrink: 0; box-shadow: 0 2px 12px rgba(0,0,0,.3);
+  }
+  .header-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: rgba(255,255,255,.13); display: flex; align-items: center;
+    justify-content: center; font-size: 18px; color: #fff; flex-shrink: 0;
+  }
+  .header-title { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -.01em; }
+  .header-sub { font-size: 10px; color: rgba(255,255,255,.5); margin-top: 1px; }
+  .risk-badge {
+    margin-left: auto; padding: 5px 14px; border-radius: 20px;
+    background: rgba(255,255,255,.1); display: flex; gap: 8px; align-items: center;
+    border: 1.5px solid rgba(255,255,255,.15);
+  }
+  .risk-badge-label { font-size: 11px; color: rgba(255,255,255,.55); }
+  .risk-badge-band { font-size: 14px; font-weight: 800; }
+  .risk-badge-score { font-size: 11px; color: rgba(255,255,255,.35); }
+
+  /* ── API key bar ── */
+  .apibar {
+    background: #0F2133; padding: 8px 20px; display: flex; align-items: center;
+    gap: 10px; flex-shrink: 0; border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .apibar label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.45); text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+  .apibar input {
+    flex: 1; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
+    border-radius: 5px; padding: 5px 10px; font-size: 12px; font-family: var(--mono);
+    color: rgba(255,255,255,.7); outline: none; max-width: 420px;
+  }
+  .apibar input:focus { border-color: var(--mid); }
+  .apibar-hint { font-size: 11px; color: rgba(255,255,255,.3); }
+  .apibar-saved { font-size: 11px; color: var(--greenlt); font-weight: 600; }
+
+  /* ── Body ── */
+  .body { display: flex; flex: 1; overflow: hidden; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 188px; background: #162B44; display: flex; flex-direction: column;
+    flex-shrink: 0; overflow-y: auto;
+  }
+  .sidebar-heading {
+    padding: 14px 14px 8px; font-size: 9.5px; font-weight: 700;
+    color: rgba(255,255,255,.3); text-transform: uppercase; letter-spacing: .09em;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 9px; padding: 11px 14px;
+    cursor: pointer; border-left: 3px solid transparent;
+    transition: all .15s; user-select: none;
+  }
+  .nav-item:hover { background: rgba(255,255,255,.06); }
+  .nav-item.active { background: rgba(255,255,255,.1); border-left-color: var(--mid); }
+  .nav-icon { font-size: 15px; color: rgba(255,255,255,.35); transition: color .15s; }
+  .nav-item.active .nav-icon { color: #fff; }
+  .nav-label { font-size: 13px; font-weight: 500; color: rgba(255,255,255,.5); transition: all .15s; }
+  .nav-item.active .nav-label { font-weight: 700; color: #fff; }
+  .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--mid); margin-left: auto; flex-shrink: 0; }
+  .nav-badge {
+    margin-left: auto; font-size: 10px; font-weight: 800;
+    background: rgba(255,255,255,.1); padding: 2px 7px; border-radius: 10px;
+  }
+  .sidebar-divider { margin: 14px 10px 0; border-top: 1px solid rgba(255,255,255,.08); }
+  .btn-review {
+    margin: 12px 10px 6px; padding: 11px 0; border-radius: 7px; border: none;
+    background: linear-gradient(135deg, var(--orange), #E87020);
+    color: #fff; font-size: 13px; font-weight: 800; cursor: pointer;
+    box-shadow: 0 3px 10px rgba(197,90,17,.4); font-family: var(--font);
+    transition: opacity .15s, transform .1s; letter-spacing: .01em;
+  }
+  .btn-review:hover { opacity: .9; transform: translateY(-1px); }
+  .btn-review:active { transform: translateY(0); }
+  .btn-review:disabled { background: #444; box-shadow: none; cursor: wait; opacity: .7; }
+  .btn-clear {
+    margin: 0 10px 14px; padding: 8px 0; border-radius: 7px;
+    border: 1px solid rgba(255,255,255,.12); background: transparent;
+    color: rgba(255,255,255,.4); font-size: 12px; cursor: pointer; font-family: var(--font);
+    transition: all .15s;
+  }
+  .btn-clear:hover { background: rgba(255,255,255,.06); color: rgba(255,255,255,.6); }
+
+  /* ── Form ── */
+  .form-area { flex: 1; overflow-y: auto; padding: 16px 20px; min-width: 0; }
+  .field-group { margin-bottom: 16px; }
+  .field-label {
+    display: block; font-size: 11.5px; font-weight: 700; color: var(--grey);
+    text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px;
+  }
+  .field-hint { font-size: 11px; color: #9E9E9E; margin-bottom: 6px; line-height: 1.5; }
+  textarea, select, input[type=text] {
+    width: 100%; padding: 9px 11px; border-radius: 7px;
+    border: 1.5px solid #D0D5DB; font-size: 13px; color: #1A1A2E;
+    background: #fff; font-family: var(--font); outline: none;
+    transition: border-color .15s;
+  }
+  textarea { resize: vertical; line-height: 1.6; }
+  textarea:focus, select:focus, input[type=text]:focus { border-color: var(--mid); }
+  .section-nav { display: flex; gap: 8px; margin-top: 4px; }
+  .section-nav-btn {
+    flex: 1; padding: 9px 0; border-radius: 7px; border: none;
+    background: #E4E8ED; color: var(--grey); font-weight: 700;
+    font-size: 12px; cursor: pointer; font-family: var(--font); transition: all .15s;
+  }
+  .section-nav-btn.active, .section-nav-btn:hover { background: var(--navy); color: #fff; }
+
+  /* ── Results panel ── */
+  .results-panel {
+    width: 420px; flex-shrink: 0; border-left: 1px solid #E0E4EA;
+    display: flex; flex-direction: column; background: #fff; overflow: hidden;
+  }
+  .results-empty {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 12px; padding: 32px; text-align: center;
+  }
+  .results-empty-icon { font-size: 44px; opacity: .1; }
+  .results-empty-title { font-size: 14px; font-weight: 700; color: #BDBDBD; }
+  .results-empty-text { font-size: 12.5px; color: #CCC; line-height: 1.7; max-width: 260px; }
+  .results-empty-text strong { color: #AAA; }
+
+  .loading {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 14px; padding: 32px;
+  }
+  .spinner { font-size: 30px; color: var(--mid); animation: spin 1.1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-title { font-size: 14px; font-weight: 700; color: var(--navy); }
+  .loading-sub { font-size: 12px; color: #AAA; }
+
+  .error-box {
+    margin: 20px; background: var(--fail-bg); border: 1.5px solid var(--fail-bd);
+    border-radius: 8px; padding: 14px;
+  }
+  .error-title { font-size: 12.5px; font-weight: 700; color: var(--red); margin-bottom: 4px; }
+  .error-text { font-size: 12.5px; color: #555; }
+
+  /* Overall banner */
+  .overall-banner {
+    padding: 14px 18px; display: flex; gap: 14px; align-items: center; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--teal), var(--navy));
+  }
+  .overall-text-title { font-size: 12.5px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+  .overall-text-summary { font-size: 11.5px; color: rgba(255,255,255,.65); line-height: 1.6; }
+
+  /* Score ring */
+  .ring-wrap { flex-shrink: 0; }
+
+  /* Result tabs */
+  .result-tabs { display: flex; border-bottom: 2px solid #EBEBEB; background: #FAFAFA; flex-shrink: 0; }
+  .result-tab {
+    flex: 1; padding: 9px 4px; text-align: center; cursor: pointer;
+    font-size: 12px; font-weight: 700; color: #9E9E9E;
+    border-bottom: 2.5px solid transparent; background: transparent;
+    transition: all .15s; font-family: var(--font); border: none;
+    border-bottom: 2.5px solid transparent;
+  }
+  .result-tab.active { color: var(--navy); background: #fff; border-bottom-color: var(--mid); }
+  .tab-count { margin-left: 5px; font-size: 10px; font-weight: 800; }
+
+  /* Field results */
+  .field-results { flex: 1; overflow-y: auto; padding: 12px 14px; }
+  .field-row {
+    margin-bottom: 8px; border-radius: 8px; overflow: hidden;
+    border: 1.5px solid var(--greybd); transition: box-shadow .15s;
+  }
+  .field-row:hover { box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+  .field-row-header {
+    display: flex; align-items: center; gap: 9px; padding: 10px 13px;
+    cursor: pointer; user-select: none;
+  }
+  .field-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .field-name { flex: 1; font-size: 12.5px; font-weight: 700; }
+  .field-score { font-size: 12px; font-weight: 800; margin-right: 4px; }
+  .field-pill { font-size: 10.5px; padding: 2px 8px; border-radius: 20px; color: #fff; font-weight: 700; }
+  .field-chevron { font-size: 10px; margin-left: 2px; }
+  .field-body {
+    padding: 12px 14px; background: #fff; border-top: 1px solid var(--greybd);
+    display: none;
+  }
+  .field-body.open { display: block; }
+  .field-feedback { font-size: 13px; color: #333; line-height: 1.65; }
+  .suggestion-box {
+    margin-top: 10px; padding: 10px 13px;
+    background: #F0F7FF; border-left: 3px solid var(--mid); border-radius: 4px;
+  }
+  .suggestion-label {
+    font-size: 10.5px; font-weight: 700; color: var(--mid); margin-bottom: 4px;
+    text-transform: uppercase; letter-spacing: .06em;
+  }
+  .suggestion-text { font-size: 13px; color: #1A2A3A; font-style: italic; line-height: 1.65; }
+
+  /* ── Print styles ── */
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    body { height: auto !important; overflow: visible !important; background: #fff !important; }
+    .hdr, .apibar, .body { display: none !important; }
+    #printOutput { display: block !important; }
+    @page { margin: 15mm 12mm; size: A4; }
+  }
+  #printOutput { display: none; font-family: var(--font); }
+  .po-hdr { background: linear-gradient(135deg, #17375E 0%, #1F4E79 100%); color: #fff; padding: 18px 22px; border-radius: 8px 8px 0 0; margin-bottom: 0; }
+  .po-hdr-title { font-size: 18px; font-weight: 800; letter-spacing: -.01em; }
+  .po-hdr-sub { font-size: 10px; color: rgba(255,255,255,.6); margin-top: 3px; }
+  .po-hdr-meta { display: flex; gap: 24px; margin-top: 12px; flex-wrap: wrap; }
+  .po-meta-item { font-size: 11px; color: rgba(255,255,255,.75); }
+  .po-meta-item strong { color: #fff; display: block; font-size: 12px; margin-bottom: 1px; }
+  .po-overall { display: flex; align-items: center; gap: 20px; padding: 16px 22px; background: #F8FAFC; border: 1px solid #E2E8F0; border-top: none; margin-bottom: 20px; }
+  .po-score-ring { flex-shrink: 0; }
+  .po-overall-label { font-size: 15px; font-weight: 800; margin-bottom: 4px; }
+  .po-overall-summary { font-size: 12.5px; color: #475569; line-height: 1.6; }
+  .po-section { margin-bottom: 20px; break-inside: avoid; }
+  .po-section-title { font-size: 12px; font-weight: 800; color: #17375E; text-transform: uppercase; letter-spacing: .06em; padding: 6px 0 6px 10px; border-left: 4px solid #2E75B6; margin-bottom: 10px; }
+  .po-field { border-radius: 7px; margin-bottom: 8px; overflow: hidden; break-inside: avoid; border: 1.5px solid #E2E8F0; }
+  .po-field-hdr { display: flex; align-items: center; gap: 8px; padding: 9px 12px; }
+  .po-field-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .po-field-name { flex: 1; font-size: 12px; font-weight: 700; }
+  .po-field-score { font-size: 12px; font-weight: 800; margin-right: 4px; }
+  .po-field-pill { font-size: 10px; padding: 2px 8px; border-radius: 12px; color: #fff; font-weight: 700; }
+  .po-field-body { padding: 10px 12px; background: #fff; border-top: 1px solid #E2E8F0; font-size: 12px; color: #334155; line-height: 1.65; }
+  .po-suggestion { margin-top: 8px; padding: 8px 10px; background: #F0F7FF; border-left: 3px solid #2E75B6; border-radius: 4px; font-size: 11.5px; font-style: italic; color: #1E3A5F; line-height: 1.6; }
+  .po-suggestion-label { font-size: 10px; font-weight: 700; color: #2E75B6; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 3px; font-style: normal; display: block; }
+  .po-entry-section { margin-bottom: 20px; break-inside: avoid; }
+  .po-entry-title { font-size: 12px; font-weight: 800; color: #17375E; text-transform: uppercase; letter-spacing: .06em; padding: 6px 0 6px 10px; border-left: 4px solid #94A3B8; margin-bottom: 10px; }
+  .po-entry-field { margin-bottom: 8px; }
+  .po-entry-label { font-size: 10px; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 3px; }
+  .po-entry-value { font-size: 12px; color: #334155; line-height: 1.6; padding: 8px 10px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 5px; white-space: pre-wrap; }
+  .po-footer { margin-top: 24px; padding-top: 10px; border-top: 1px solid #E2E8F0; display: flex; justify-content: space-between; font-size: 10px; color: #94A3B8; }
+  .po-divider { height: 1px; background: #E2E8F0; margin: 20px 0; }
+
+  /* CSV load panel */
+  .csv-load-bar { background: #F0F7FF; border: 1.5px dashed var(--mid); border-radius: 8px;
+    padding: 12px 14px; margin-bottom: 14px; }
+  .csv-load-title { font-size: 11px; font-weight: 800; color: var(--mid); text-transform: uppercase;
+    letter-spacing: .06em; margin-bottom: 6px; }
+  .csv-load-row { display: flex; gap: 8px; align-items: flex-start; }
+  .csv-load-row textarea { flex: 1; height: 80px; font-size: 11px; font-family: var(--mono);
+    color: #334155; background: #fff; resize: vertical; }
+  .btn-csv-load { padding: 7px 14px; border-radius: 6px; border: none; background: var(--mid);
+    color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; font-family: var(--font);
+    white-space: nowrap; flex-shrink: 0; transition: opacity .15s; }
+  .btn-csv-load:hover { opacity: .85; }
+  .btn-csv-tpl { padding: 7px 12px; border-radius: 6px; border: 1.5px solid var(--mid);
+    background: #fff; color: var(--mid); font-size: 11px; font-weight: 700; cursor: pointer;
+    font-family: var(--font); white-space: nowrap; flex-shrink: 0; transition: all .15s; }
+  .btn-csv-tpl:hover { background: #EFF6FF; }
+  .csv-status { font-size: 11px; margin-top: 5px; }
+  .csv-ok { color: var(--greenlt); font-weight: 700; }
+  .csv-err { color: var(--red); font-weight: 700; }
+  /* Audit flag */
+  .audit-flag { background: #FFF8E1; border: 1.5px solid #E26B0A; border-radius: 6px;
+    padding: 8px 11px; margin-top: 6px; font-size: 11.5px; color: #7B4000; line-height: 1.5;
+    display: none; }
+  .audit-flag strong { display: block; margin-bottom: 3px; }
+  /* Field check callout */
+  .fieldcheck-hint { background: #F0FDF4; border-left: 3px solid var(--greenlt);
+    border-radius: 4px; padding: 8px 11px; margin-bottom: 6px; font-size: 11px;
+    color: #14532D; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-icon">⬡</div>
+  <div>
+    <div class="header-title">Figtree Risk Entry Review</div>
+    <div class="header-sub">Risk Assessment Writing Guide V4 · 24/3/26 · GOHS2.1.2 · ISO 31000:2018 · ISO 45001:2018 · WHS Act 2011 (Qld) ss.17–19</div>
+  </div>
+  <div class="risk-badge" id="riskBadge" style="display:none">
+    <span class="risk-badge-label">Inherent Risk</span>
+    <span class="risk-badge-band" id="bandLabel">—</span>
+    <span class="risk-badge-score" id="scoreLabel"></span>
+  </div>
+  <button onclick="printReview()" id="btnPrint" style="display:none;margin-left:8px;padding:6px 14px;border-radius:6px;border:1.5px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.22)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">⎙ Print / PDF</button>
+</div>
+
+<!-- API Key bar -->
+<div class="apibar">
+  <label for="apiKeyInput">Anthropic API Key</label>
+  <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off">
+  <span class="apibar-hint">Your key is stored locally in this browser only. Find it at console.anthropic.com → API Keys.</span>
+  <span class="apibar-saved" id="keySaved" style="display:none">✓ Saved</span>
+</div>
+
+<!-- Body -->
+<div class="body">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-heading">Entry Sections</div>
+    <div class="nav-item active" data-tab="hazard" onclick="switchTab('hazard')">
+      <span class="nav-icon">⚠</span>
+      <span class="nav-label">Hazard</span>
+      <span class="nav-dot" id="dot-hazard" style="display:none"></span>
+      <span class="nav-badge" id="badge-hazard" style="display:none"></span>
+    </div>
+    <div class="nav-item" data-tab="risk" onclick="switchTab('risk')">
+      <span class="nav-icon">◈</span>
+      <span class="nav-label">Risk</span>
+      <span class="nav-dot" id="dot-risk" style="display:none"></span>
+      <span class="nav-badge" id="badge-risk" style="display:none"></span>
+    </div>
+    <div class="nav-item" data-tab="control" onclick="switchTab('control')">
+      <span class="nav-icon">◉</span>
+      <span class="nav-label">Control</span>
+      <span class="nav-dot" id="dot-control" style="display:none"></span>
+      <span class="nav-badge" id="badge-control" style="display:none"></span>
+    </div>
+    <div class="sidebar-divider"></div>
+    <button class="btn-review" id="btnReview" onclick="runReview()">▶  Review Entry</button>
+    <button class="btn-clear" onclick="clearAll()">Clear Entry</button>
+  </div>
+
+  <!-- Form -->
+  <div class="form-area" id="formArea">
+
+    <!-- CSV load bar -->
+    <div class="csv-load-bar">
+      <div class="csv-load-title">⇩ Load Entry from CSV</div>
+      <div class="csv-load-row">
+        <textarea id="csvPasteArea" placeholder="Paste CSV here (two columns: Field,Value) then click Load. Click Template to see the format."></textarea>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button class="btn-csv-load" onclick="loadFromCSV()">Load</button>
+          <button class="btn-csv-tpl" onclick="showCSVTemplate()">Template</button>
+          <button class="btn-csv-tpl" onclick="clearAll()" style="border-color:var(--red);color:var(--red)">Clear</button>
+        </div>
+      </div>
+      <div class="csv-status" id="csvStatus"></div>
+    </div>
+
+    <!-- Hazard section -->
+    <div id="section-hazard">
+      <div class="field-group">
+        <label class="field-label">Hazard Description</label>
+        <div class="field-hint">Format: The presence of [source/condition] in [area/task] may expose [person/group] to harm during [circumstance].</div>
+        <textarea id="hazardDescription" rows="5" placeholder="The presence of [hazard source or unsafe condition] in [specific area, task, or process] may expose [person or group] to harm during [occurrence or circumstance]."></textarea>
+      </div>
+    </div>
+
+    <!-- Risk section -->
+    <div id="section-risk" style="display:none">
+      <div class="field-group">
+        <label class="field-label">Risk Title</label>
+        <div class="field-hint">5–8 words. Describes the core occurrence. Plain language — no jargon.</div>
+        <input type="text" id="riskTitle" placeholder="e.g. Lifeguards Exposed to Extreme Heat and Humidity on Duty">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Risk Description</label>
+        <div class="field-hint">Must link clearly to the hazard. Format: There is a risk that [occurrence] may occur, which could result in [consequence], due to [context]. Risk cause may be combined into this field.</div>
+        <textarea id="riskDescription" rows="5" placeholder="There is a risk that [occurrence] may occur, which could result in [primary consequence] and [secondary consequences], due to [context or conditions]."></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Risk Cause</label>
+        <div class="field-hint">Optional if cause is already embedded in the risk description. Format: The risk may be caused by [immediate causes], due to [underlying/systemic causes].</div>
+        <textarea id="riskCause" rows="3" placeholder="The risk may be caused by [immediate or technical causes], due to [underlying or systemic causes]. (Leave blank if cause is incorporated into the risk description above.)"></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Consequence Category</label>
+        <select id="consequenceCategory">
+          <option>— Select —</option>
+          <option>Health and Safety</option>
+          <option>Environmental</option>
+          <option>Food Safety</option>
+          <option>Psychosocial</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Inherent Consequence Rating</label>
+        <select id="consequenceRating" onchange="updateRiskBand()">
+          <option>— Select —</option>
+          <option>Insignificant</option>
+          <option>Minor</option>
+          <option>Moderate</option>
+          <option>Serious (WHS Act pt3)</option>
+          <option>Critical (WHS Act pt3)</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Inherent Consequence Justification</label>
+        <div class="field-hint">State the rating, reference the matrix definition, cite evidence. Assess WITHOUT any controls in place.</div>
+        <textarea id="consequenceJustification" rows="4" placeholder="A [rating] consequence is justified because [evidence or reasoning], consistent with the [risk matrix category] definition."></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Inherent Likelihood Rating</label>
+        <select id="likelihoodRating" onchange="updateRiskBand()">
+          <option>— Select —</option>
+          <option>Rare</option>
+          <option>Unlikely</option>
+          <option>Possible</option>
+          <option>Likely</option>
+          <option>Almost Certain</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Inherent Likelihood Justification</label>
+        <div class="field-hint">State the rating, reference frequency from the matrix. Assess as though NO controls are in place.</div>
+        <textarea id="likelihoodJustification" rows="4" placeholder="The likelihood is rated as [rating] because [frequency/exposure/history/conditions], consistent with the matrix definition."></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">SFARP Justification</label>
+        <div class="field-hint">Required for Extreme/High only. Clearly link risk to controls. List what is implemented, how each reduces risk, and why further measures are not reasonably practicable. Never write 'the risk is acceptable'.</div>
+        <textarea id="sfarpJustification" rows="5" placeholder="The level of risk has been reduced so far as is reasonably practicable. All feasible controls have been considered in accordance with WHS Act ss.17–19, having regard to likelihood, degree of harm, state of knowledge, availability, suitability, and cost of additional controls..."></textarea>
+      </div>
+    </div>
+
+    <!-- Control section -->
+    <div id="section-control" style="display:none">
+      <div class="field-group">
+        <label class="field-label">Control Description</label>
+        <div class="field-hint">Format: [Control] is in place to [prevent/reduce] [risk/consequence] by [mechanism]. State the action first — a procedure alone is not a control.</div>
+        <textarea id="controlDescription" rows="5" placeholder="[Control] is in place to [prevent or reduce] [specific risk or consequence] by [mechanism of action]."></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Is this control an Audit or Inspection?</label>
+        <div class="field-hint">Audits and inspections are assurance activities, not primary controls. If Yes, the description must include all 7 required elements.</div>
+        <select id="isAuditControl" onchange="toggleAuditFlag()">
+          <option value="no">No — this is a primary control</option>
+          <option value="yes">Yes — this is an audit or inspection</option>
+        </select>
+        <div class="audit-flag" id="auditFlag">
+          <strong>⚠ Audit/Inspection as Control — 7 elements required in description:</strong>
+          1. What is being verified (specific control/condition) &nbsp;·&nbsp;
+          2. Method (audit, inspection, test, sampling, observation) &nbsp;·&nbsp;
+          3. Frequency (defined interval or trigger) &nbsp;·&nbsp;
+          4. Responsible role &nbsp;·&nbsp;
+          5. Acceptance criteria (what compliant looks like) &nbsp;·&nbsp;
+          6. Evidence/records (checklist, CMMS, report) &nbsp;·&nbsp;
+          7. Escalation trigger (what happens if non-compliant)
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Control Type</label>
+        <select id="controlType">
+          <option>— Select —</option>
+          <option>Prevention — intersects before the event, reduces likelihood</option>
+          <option>Mitigation — intersects after the event, reduces consequence</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Hierarchy Level (ISO 45001 cl.8.1.2)</label>
+        <select id="hierarchyLevel">
+          <option>— Select —</option>
+          <option>1 — Elimination</option>
+          <option>2 — Substitution</option>
+          <option>3 — Engineering control</option>
+          <option>4 — Administrative control</option>
+          <option>5 — PPE</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Critical Control?</label>
+        <select id="criticalControl">
+          <option>— Select —</option>
+          <option>Yes — Critical control</option>
+          <option>No — Noncritical control</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Critical Control Verification</label>
+        <div class="field-hint">Required if critical. Must include all five in order: Responsibility; Frequency; Performance Criteria; Evidence; Escalation of Failure.</div>
+        <textarea id="criticalVerification" rows="5" placeholder="[Responsibility] / [Frequency] / Performance Criteria: [measurable standard] / Evidence: [record type] / Escalation: [exact response on failure]."></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Critical Control Field Check</label>
+        <div class="fieldcheck-hint">Required for critical controls. Six components in order: Performance Parameter (what is measured, quantified) → Method &amp; Tool → Sample Point (where) → Acceptance Threshold (pass/fail, numerical) → Frequency (tied to operating conditions) → Record &amp; Escalation (what to record, who to notify, at what threshold).</div>
+        <div class="field-hint">Format: What to do → what to use → where/when → threshold → record it → who to notify at what level.</div>
+        <textarea id="criticalFieldCheck" rows="4" placeholder="e.g. Collect water sample using approved test kit, at pump intake return channel (daily opening), confirm free chlorine 1.0–3.0 ppm / pH 7.2–7.8 / turbidity ≤5 NTU, record in Daily Water Quality Log, if outside range suspend operation and notify supervisor before re-opening."></textarea>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Risk Reduction Justification</label>
+        <div class="field-hint">How and why do these controls reduce risk from inherent to current? Reference hierarchy level — admin controls cannot claim the same reduction as engineering.</div>
+        <textarea id="riskReductionJustification" rows="4" placeholder="The implemented control reduces the risk by [eliminating / substituting / engineering / administratively controlling / protecting via PPE], resulting in [specific reduction in likelihood and/or consequence] consistent with SFARP principles."></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Control Effectiveness Rating</label>
+        <select id="controlEffectivenessRating">
+          <option>— Select —</option>
+          <option>1 — Highly Effective: engineered/automated, no human behaviour dependency</option>
+          <option>2 — Effective: engineered + monitoring, human = supervision/verification only</option>
+          <option>3 — Moderately Effective: relies on correct human action (critical controls: strict verification required)</option>
+          <option>4 — Partially Effective: administrative, degrades without active supervision</option>
+          <option>5 — Not Effective: absent or inadequate</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Section nav -->
+    <div class="section-nav">
+      <button class="section-nav-btn active" id="snav-hazard" onclick="switchTab('hazard')">1. Hazard</button>
+      <button class="section-nav-btn" id="snav-risk" onclick="switchTab('risk')">2. Risk</button>
+      <button class="section-nav-btn" id="snav-control" onclick="switchTab('control')">3. Control</button>
+    </div>
+  </div>
+
+  <!-- Results panel -->
+  <div class="results-panel">
+    <div id="resultsEmpty" class="results-empty">
+      <div class="results-empty-icon">◈</div>
+      <div class="results-empty-title">Review Results</div>
+      <div class="results-empty-text">Fill in one or more fields across any section, then click <strong>Review Entry</strong>. Only completed fields are reviewed — you can review a single field like the hazard description on its own.</div>
+    </div>
+    <div id="resultsLoading" class="loading" style="display:none">
+      <div class="spinner">◌</div>
+      <div class="loading-title">Checking entry…</div>
+      <div class="loading-sub">Reviewing each field against the writing guide</div>
+    </div>
+    <div id="resultsError" class="error-box" style="display:none">
+      <div class="error-title">Review Error</div>
+      <div class="error-text" id="errorText"></div>
+    </div>
+    <div id="resultsContent" style="display:none; flex-direction:column; height:100%; overflow:hidden;">
+      <div class="overall-banner">
+        <div class="ring-wrap">
+          <svg id="scoreRing" width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="30" fill="none" stroke="#E0E0E0" stroke-width="8"/>
+            <circle id="ringArc" cx="40" cy="40" r="30" fill="none" stroke="#70AD47" stroke-width="8"
+              stroke-dasharray="188.5" stroke-dashoffset="188.5"
+              stroke-linecap="round" transform="rotate(-90 40 40)"
+              style="transition: stroke-dashoffset .9s cubic-bezier(.4,0,.2,1), stroke .4s"/>
+            <text id="ringScore" x="40" y="37" text-anchor="middle" font-size="17" font-weight="800" fill="#70AD47" font-family="DM Sans, system-ui">0</text>
+            <text x="40" y="52" text-anchor="middle" font-size="9" fill="#AAA" font-family="DM Sans, system-ui">/100</text>
+          </svg>
+        </div>
+        <div style="flex:1; min-width:0;">
+          <div class="overall-text-title" id="overallLabel">—</div>
+          <div class="overall-text-summary" id="overallSummary"></div>
+        </div>
+      </div>
+      <div class="result-tabs">
+        <button class="result-tab active" id="rtab-hazard" onclick="switchResultTab('hazard')">Hazard <span class="tab-count" id="rcount-hazard"></span></button>
+        <button class="result-tab" id="rtab-risk" onclick="switchResultTab('risk')">Risk <span class="tab-count" id="rcount-risk"></span></button>
+        <button class="result-tab" id="rtab-control" onclick="switchResultTab('control')">Control <span class="tab-count" id="rcount-control"></span></button>
+      </div>
+      <div class="field-results" id="fieldResults"></div>
+    </div>
+  </div>
+
+</div>
+<!-- Print output -->
+<div id="printOutput"></div>
+
+
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let currentTab = 'hazard';
+let currentResultTab = 'hazard';
+let reviewResult = null;
+
+const TABS = ['hazard','risk','control'];
+const RESULT_FIELDS = {
+  hazard:  ['hazardDescription'],
+  risk:    ['riskTitle','riskDescription','riskCause','consequenceJustification','likelihoodJustification','sfarpJustification'],
+  control: ['controlDescription','controlType','auditInspectionCheck','criticalClassification','criticalVerification','criticalFieldCheck','riskReductionJustification','controlEffectivenessRating']
+};
+const FIELD_LABELS = {
+  hazardDescription: 'Hazard Description',
+  riskTitle: 'Risk Title',
+  riskDescription: 'Risk Description',
+  riskCause: 'Risk Cause',
+  consequenceJustification: 'Inherent Consequence Justification',
+  likelihoodJustification: 'Inherent Likelihood Justification',
+  sfarpJustification: 'SFARP Justification',
+  controlDescription: 'Control Description',
+  controlType: 'Control Type',
+  criticalClassification: 'Critical Control Classification',
+  criticalVerification: 'Critical Control Verification',
+  riskReductionJustification: 'Risk Reduction Justification',
+  auditInspectionCheck: 'Audit / Inspection as Control',
+  criticalFieldCheck: 'Critical Control Field Check',
+  controlEffectivenessRating: 'Control Effectiveness Rating'
+};
+const VERDICT_STYLES = {
+  pass:       { bg:'var(--pass-bg)', bd:'var(--pass-bd)', tx:'var(--pass-tx)', dot:'#70AD47', pill:'Meets Standard',  pillBg:'#70AD47' },
+  needs_work: { bg:'var(--warn-bg)', bd:'var(--warn-bd)', tx:'var(--warn-tx)', dot:'#E26B0A', pill:'Needs Work',      pillBg:'#E26B0A' },
+  fail:       { bg:'var(--fail-bg)', bd:'var(--fail-bd)', tx:'var(--fail-tx)', dot:'#C00000', pill:'Does Not Meet',   pillBg:'#C00000' }
+};
+const BAND_COLORS = { Extreme:'#C00000', High:'#E26B0A', Medium:'#FFC000', Low:'#70AD47' };
+
+// ── API key persistence ───────────────────────────────────────────────────
+const apiInput = document.getElementById('apiKeyInput');
+const keySaved = document.getElementById('keySaved');
+if (localStorage.getItem('vrtp_api_key')) {
+  apiInput.value = localStorage.getItem('vrtp_api_key');
+  keySaved.style.display = 'inline';
+}
+apiInput.addEventListener('input', () => {
+  const v = apiInput.value.trim();
+  if (v.length > 20) {
+    localStorage.setItem('vrtp_api_key', v);
+    keySaved.style.display = 'inline';
+  } else {
+    keySaved.style.display = 'none';
+  }
+});
+
+// ── Tab switching ────────────────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  TABS.forEach(t => {
+    document.getElementById('section-' + t).style.display = t === tab ? 'block' : 'none';
+    document.querySelector(`[data-tab="${t}"]`).classList.toggle('active', t === tab);
+    document.getElementById('snav-' + t).classList.toggle('active', t === tab);
+  });
+  updateDots();
+}
+
+function updateDots() {
+  const formIds = {
+    hazard: ['hazardDescription'],
+    risk: ['riskTitle','riskDescription','riskCause','consequenceCategory','consequenceRating','consequenceJustification','likelihoodRating','likelihoodJustification','sfarpJustification'],
+    control: ['controlDescription','controlType','hierarchyLevel','criticalControl','criticalVerification','riskReductionJustification','controlEffectivenessRating']
+  };
+  TABS.forEach(t => {
+    const filled = formIds[t].some(id => {
+      const el = document.getElementById(id);
+      return el && el.value.trim() && el.value !== '— Select —';
+    });
+    document.getElementById('dot-' + t).style.display = filled ? 'block' : 'none';
+  });
+}
+
+// ── Risk band calc ────────────────────────────────────────────────────────
+const LK_MAP = { 'Rare':1,'Unlikely':2,'Possible':3,'Likely':4,'Almost Certain':5 };
+const CS_MAP = { 'Insignificant':1,'Minor':2,'Moderate':3,'Serious (WHS Act pt3)':4,'Critical (WHS Act pt3)':5 };
+
+function updateRiskBand() {
+  const lk = document.getElementById('likelihoodRating').value;
+  const cs = document.getElementById('consequenceRating').value;
+  const s = (LK_MAP[lk] || 0) * (CS_MAP[cs] || 0);
+  const band = s >= 15 ? 'Extreme' : s >= 10 ? 'High' : s >= 5 ? 'Medium' : s > 0 ? 'Low' : null;
+  const badge = document.getElementById('riskBadge');
+  if (band) {
+    badge.style.display = 'flex';
+    badge.style.borderColor = (BAND_COLORS[band] || '#fff') + '55';
+    document.getElementById('bandLabel').textContent = band;
+    document.getElementById('bandLabel').style.color = BAND_COLORS[band] || '#fff';
+    document.getElementById('scoreLabel').textContent = s;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ── Input listeners for dots ──────────────────────────────────────────────
+document.querySelectorAll('textarea, select, input[type=text]').forEach(el => {
+  if (el.id !== 'apiKeyInput') el.addEventListener('input', updateDots);
+  if (el.id !== 'apiKeyInput') el.addEventListener('change', updateDots);
+});
+
+// ── Clear ─────────────────────────────────────────────────────────────────
+function clearAll() {
+  document.querySelectorAll('textarea').forEach(el => el.value = '');
+  document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+  document.querySelectorAll('input[type=text]').forEach(el => { if(el.id !== 'apiKeyInput') el.value = ''; });
+  reviewResult = null;
+  document.getElementById('btnPrint').style.display = 'none';
+  document.getElementById('printOutput').innerHTML = '';
+  showState('empty');
+  updateDots();
+  updateRiskBand();
+  TABS.forEach(t => {
+    document.getElementById('badge-' + t).style.display = 'none';
+  });
+}
+
+// ── Results state ─────────────────────────────────────────────────────────
+function showState(state) {
+  document.getElementById('resultsEmpty').style.display   = state === 'empty'   ? 'flex'   : 'none';
+  document.getElementById('resultsLoading').style.display = state === 'loading' ? 'flex'   : 'none';
+  document.getElementById('resultsError').style.display   = state === 'error'   ? 'block'  : 'none';
+  const rc = document.getElementById('resultsContent');
+  rc.style.display = state === 'results' ? 'flex' : 'none';
+}
+
+// ── Result tab switching ──────────────────────────────────────────────────
+function switchResultTab(tab) {
+  currentResultTab = tab;
+  TABS.forEach(t => {
+    document.getElementById('rtab-' + t).classList.toggle('active', t === tab);
+  });
+  renderFieldResults();
+}
+
+// ── Render field results ──────────────────────────────────────────────────
+function renderFieldResults() {
+  if (!reviewResult) return;
+  const container = document.getElementById('fieldResults');
+  const ids = RESULT_FIELDS[currentResultTab];
+  container.innerHTML = '';
+  ids.forEach(id => {
+    const r = reviewResult.fields && reviewResult.fields[id];
+    if (!r) return;
+    const vs = VERDICT_STYLES[r.verdict] || VERDICT_STYLES.fail;
+    const rowId = 'row-' + id;
+    const div = document.createElement('div');
+    div.className = 'field-row';
+    div.style.borderColor = vs.bd;
+    div.innerHTML = `
+      <div class="field-row-header" style="background:${vs.bg}" onclick="toggleRow('${rowId}')">
+        <div class="field-dot" style="background:${vs.dot}"></div>
+        <div class="field-name" style="color:${vs.tx}">${FIELD_LABELS[id] || id}</div>
+        <div class="field-score" style="color:${vs.dot}">${r.score}</div>
+        <div class="field-pill" style="background:${vs.pillBg}">${vs.pill}</div>
+        <div class="field-chevron" style="color:${vs.tx}" id="chev-${rowId}">▼</div>
+      </div>
+      <div class="field-body" id="${rowId}">
+        <div class="field-feedback">${escHtml(r.feedback || '')}</div>
+        ${r.suggestion ? `<div class="suggestion-box">
+          <div class="suggestion-label">Suggested Rewrite</div>
+          <div class="suggestion-text">${escHtml(r.suggestion)}</div>
+        </div>` : ''}
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+function toggleRow(rowId) {
+  const body = document.getElementById(rowId);
+  const chev = document.getElementById('chev-' + rowId);
+  const open = body.classList.toggle('open');
+  chev.textContent = open ? '▲' : '▼';
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Update score ring ─────────────────────────────────────────────────────
+function updateRing(score) {
+  const circ = 2 * Math.PI * 30;
+  const col = score >= 75 ? '#70AD47' : score >= 50 ? '#E26B0A' : '#C00000';
+  const arc = document.getElementById('ringArc');
+  const txt = document.getElementById('ringScore');
+  arc.style.strokeDashoffset = circ * (1 - score / 100);
+  arc.style.stroke = col;
+  txt.textContent = score;
+  txt.style.fill = col;
+}
+
+// ── Update result tab badges ──────────────────────────────────────────────
+function updateResultBadges() {
+  if (!reviewResult) return;
+  TABS.forEach(t => {
+    const ids = RESULT_FIELDS[t];
+    const reviewed = ids.filter(id => reviewResult.fields && reviewResult.fields[id] !== undefined);
+    const pass = reviewed.filter(id => reviewResult.fields[id]?.verdict === 'pass').length;
+    const total = reviewed.length;
+    const col = pass === total ? '#70AD47' : pass === 0 ? '#C00000' : '#E26B0A';
+    const el = document.getElementById('rcount-' + t);
+    el.textContent = `${pass}/${total}`;
+    el.style.color = col;
+    // sidebar badge
+    const sb = document.getElementById('badge-' + t);
+    sb.style.display = 'inline';
+    sb.textContent = `${pass}/${total}`;
+    sb.style.color = col;
+  });
+}
+
+// ── System prompt ─────────────────────────────────────────────────────────
+const SYSTEM_PROMPT = `You are a WHS risk assessment reviewer for Village Roadshow Theme Parks (VRTP). Review Figtree risk register entries against the Risk Assessment Writing Guide V4 (24/3/26), aligned to ISO 31000:2018, ISO 45001:2018, WHS Act 2011 (Qld) ss.17–19, GOHS2.1.2.
+
+CRITICAL: Only review fields that contain actual content. If a field says [not provided] or [not selected], OMIT it from the response entirely. Do not score empty fields. Return ONLY a JSON object — no prose, no markdown fences.
+
+━━ HAZARD DESCRIPTION ━━
+Format: "The presence of [source/condition] in [area/task] may expose [person/group] to harm during [circumstance]."
+- Must describe a SOURCE of harm, not an event, injury, or consequence
+- Must name who is exposed, where, and when
+- "to harm" is acceptable per the VRTP guide
+- Do name the specific hazard source; do state who is exposed and exposure circumstance
+- Don't include events, injuries, or consequences; don't combine multiple hazard sources
+- FAIL if consequence language: "resulting in", "causing", "leading to", "which could cause"
+- FAIL if vague: "unsafe condition", "hazardous area", "risk of injury"
+
+━━ RISK TITLE ━━
+- 5–8 words, plain language, core occurrence, differentiates from similar risks
+- FAIL if >10 words or describes a consequence not an event
+
+━━ RISK DESCRIPTION ━━
+Format: "There is a risk that [occurrence] may occur, which could result in [primary consequence] and [secondary consequences], due to [context/conditions]."
+- Must show clear logical linkage to the hazard description if both provided
+- Must state: hazardous condition + who is exposed + credible event + primary and secondary consequences + contributing conditions
+- Write one event (not multiple occurrences); include cause and consequences
+- Use specific language; use causal verbs: "may occur", "may cause", "may result in"
+- FAIL if no linkage to stated hazard; FAIL if vague ("accident", "injury", "equipment issue")
+
+━━ RISK CAUSE ━━
+Format: "The risk may be caused by [immediate causes], due to [underlying/systemic causes]."
+- May be combined into the risk description — do NOT penalise blank field if risk description contains causal content
+- If provided separately, must add new causal information not already in description
+
+━━ INHERENT CONSEQUENCE JUSTIFICATION ━━
+- Must state the exact consequence RATING label
+- Must reference the risk matrix definition for that rating; explain why that category fits
+- Evidence priority order: (1) internal incident/near miss records FIRST, (2) then exposure/operational data, (3) then external industry/regulator guidance — note if lower-priority evidence used when higher-priority should exist
+- Must reflect worst reasonably foreseeable outcome — don't understate
+- State credible scale: one person vs multiple people/guests where it affects the rating
+- Must NOT reference controls — inherent means no controls assumed
+- FAIL if controls influence the consequence rating
+
+━━ INHERENT LIKELIHOOD JUSTIFICATION ━━
+- Must state the exact likelihood RATING label
+- Must match the matrix frequency/timeframe wording and explain why it applies
+- Evidence priority order: (1) internal incident/near miss history FIRST, (2) then exposure/operational data (hours, frequency, scale), (3) then external industry trends/regulator guidance
+- Quantify exposure (hours, frequency, scale) rather than vague terms
+- Must assume NO controls are in place — "assuming no controls are in place"
+- FAIL if controls are referenced as reducing likelihood
+
+━━ SFARP JUSTIFICATION (Extreme/High only) ━━
+- Must say "reduced so far as is reasonably practicable" — never "risk is acceptable"
+- Must list implemented controls and state HOW each reduces likelihood and/or consequence
+- Must document options considered but not implemented and WHY not reasonably practicable (s.18 factors: likelihood, degree of harm, state of knowledge, availability, suitability, cost)
+- If Medium or Low band: score 100, verdict pass, feedback "Not applicable for this risk band"
+- FAIL if uses "acceptable" without SFARP framing
+
+━━ CONTROL DESCRIPTION ━━
+Format: "[Control] is in place to [prevent/reduce] [specific risk/consequence] by [mechanism]."
+- Must answer: what is the control, how does it work, why does it reduce risk
+- A procedure or form is NOT a control — describe the control action first, then cite the procedure ID/title as the performance standard
+- FAIL if only a document name with no described action
+
+━━ AUDIT / INSPECTION AS CONTROL ━━
+- Audits and inspections are assurance activities, not primary risk controls
+- Do NOT accept "audit" or "inspection" as the only control for a risk
+- If documented as a control, it must function as a verification mechanism (detecting degradation, confirming compliance, identifying drift) and must include ALL 7 elements:
+  1. What is being verified (specific controls, conditions, or system elements)
+  2. Method (audit, inspection, test, sampling, observation, document review)
+  3. Frequency (defined interval or risk-based trigger)
+  4. Responsible role (accountable for completion)
+  5. Acceptance criteria (what "compliant/effective" looks like — objective where possible)
+  6. Evidence/records (checklist, report, CMMS, audit tool)
+  7. Escalation trigger (what happens if non-compliant or degraded)
+- FAIL if documented as a standalone control with no underlying primary controls referenced
+- FAIL if any of the 7 elements is missing when it is the documented control
+- If control is marked "no" (not an audit), score 100 and mark pass with "Not an audit/inspection control"
+
+━━ CONTROL TYPE ━━
+- Prevention = intersects BEFORE event, reduces likelihood
+- Mitigation = intersects AFTER event, reduces consequence
+- FAIL if inconsistent with the control described
+
+━━ CRITICAL CONTROL CLASSIFICATION ━━
+Uses the Critical Control Decision Tree:
+Step 1: Does control prevent/detect/mitigate a Serious or Critical consequence event? If NO → NOT critical.
+Step 2: Prevention pathway — is it the only barrier or last line of defence? YES → Critical.
+Step 2: Mitigation pathway — does it prevent or detect escalation? If YES → Step 3.
+Step 3: Is it effective for multiple risks? YES → Critical. Is it independent? YES → Critical. NO → Not critical.
+Must meet BOTH: (1) Serious/Critical consequence AND (2) only/last barrier OR multi-risk OR independent.
+- FAIL if classified Critical without meeting both criteria
+- FAIL if classified Critical for Low/Medium risk with no Serious/Critical consequence potential
+
+━━ CRITICAL CONTROL VERIFICATION ━━
+Required only if Critical. Must include ALL FIVE in order:
+Responsibility; Frequency; Performance Criteria (specific and measurable); Verification Evidence (auditable); Escalation of Failure (exact response, not just "report to supervisor")
+- If noncritical: score 100, verdict pass, feedback "Not applicable — noncritical control"
+- FAIL if any of the five elements is absent
+
+━━ CRITICAL CONTROL FIELD CHECK ━━
+Required only if Critical. Six components in order:
+1. Performance parameter (exact thing being measured — quantified, not described)
+2. Method and tool (specific instrument or procedure step)
+3. Sample point (where exactly the check is performed)
+4. Acceptance threshold (pass range / fail threshold — numerical where possible)
+5. Frequency (when and how often — tied to operating conditions, not just calendar)
+6. Record and escalation (what to record, to whom, what action triggers at what threshold)
+Format: What to do → what to use → where/when → threshold → record → who to notify at what level.
+Example pass: "Collect water sample using approved test kit, at pump intake return channel (daily opening), confirm free chlorine 1.0–3.0 ppm, pH 7.2–7.8, turbidity ≤5 NTU, record in Daily Water Quality Log, if outside range suspend operation and notify supervisor before re-opening."
+- If noncritical: score 100, verdict pass, feedback "Not applicable — noncritical control"
+- FAIL if quantified thresholds are absent; FAIL if escalation path is vague
+- FAIL if only 1–4 components present
+
+━━ CONTROL EFFECTIVENESS RATING ━━
+1 = Highly Effective: engineered/automated, zero human behaviour dependency, continuously effective
+2 = Effective: engineered + monitoring, human limited to supervision or verification
+3 = Moderately Effective: relies on correct human action — for critical controls ONLY if reliance is on human interaction AND verification must be strictly monitored; flag this
+4 = Partially Effective: predominantly administrative, degrades without active supervision
+5 = Not Effective: absent, inadequate, or not implemented
+- Critical controls must be rated 1 or 2; rating 3 only if human-interaction-based with strict monitoring
+- FAIL if critical control rated 4 or 5
+- FAIL if admin-only control rated 1 or 2
+
+━━ RISK REDUCTION JUSTIFICATION ━━
+Format: "The implemented control reduces the risk by [eliminating/substituting/engineering/administratively controlling/protecting via PPE], resulting in a [specific reduction in likelihood and/or consequence] consistent with SFARP principles."
+- Must explain HOW and WHY controls reduce from inherent to controlled rating
+- Must reference hierarchy level; claim reduction that matches control type
+- Engineering controls more reliable than administrative/PPE — cannot claim equivalent reduction
+- FAIL if only restates what the control is without explaining the reduction mechanism
+
+Return ONLY this JSON. Include ONLY fields that were actually submitted with real content:
+{
+  "overallScore": <integer 0-100>,
+  "overallVerdict": "meets_standard" | "needs_work" | "does_not_meet",
+  "summary": "<2-3 sentence assessment of the fields reviewed>",
+  "fieldsReviewed": <integer>,
+  "fields": {
+    "<fieldKey>": {"score":<0-100>,"verdict":"pass"|"needs_work"|"fail","feedback":"<specific>","suggestion":<"rewrite"|null>}
+  }
+}
+Valid keys: hazardDescription, riskTitle, riskDescription, riskCause,
+consequenceJustification, likelihoodJustification, sfarpJustification,
+controlDescription, auditInspectionCheck, controlType, criticalClassification,
+criticalVerification, criticalFieldCheck, riskReductionJustification, controlEffectivenessRating`;
+
+// ── Run review ────────────────────────────────────────────────────────────
+async function runReview() {
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+  if (!apiKey || apiKey.length < 20) {
+    document.getElementById('resultsError').style.display = 'block';
+    document.getElementById('errorText').textContent = 'Please enter your Anthropic API key in the bar at the top before reviewing.';
+    showState('error');
+    return;
+  }
+
+  const lk = document.getElementById('likelihoodRating').value;
+  const cs = document.getElementById('consequenceRating').value;
+  const score = (LK_MAP[lk] || 0) * (CS_MAP[cs] || 0);
+  const band = score >= 15 ? 'Extreme' : score >= 10 ? 'High' : score >= 5 ? 'Medium' : score > 0 ? 'Low' : 'Unknown';
+
+  const g = id => (document.getElementById(id) || {}).value || '[not provided]';
+
+  const entry = `RISK REGISTER ENTRY — REVIEW AGAINST VRTP RISK ASSESSMENT REFERENCE WRITING GUIDE
+Consequence Category: ${g('consequenceCategory')}
+Inherent Risk Score: ${score || 'not calculated'} | Band: ${band}
+
+=== HAZARD ===
+Hazard Description: ${g('hazardDescription')}
+
+=== RISK ===
+Risk Title: ${g('riskTitle')}
+Risk Description: ${g('riskDescription')}
+Risk Cause (may be blank if embedded in description): ${g('riskCause')}
+Inherent Consequence Rating: ${g('consequenceRating')}
+Inherent Consequence Justification: ${g('consequenceJustification')}
+Inherent Likelihood Rating: ${g('likelihoodRating')}
+Inherent Likelihood Justification: ${g('likelihoodJustification')}
+SFARP Justification: ${g('sfarpJustification')} [Note: only required for Extreme/High band]
+
+=== CONTROL ===
+Control Description: ${g('controlDescription')}
+Control Type: ${g('controlType')}
+Hierarchy Level: ${g('hierarchyLevel')}
+Critical Control: ${g('criticalControl')}
+Is Audit/Inspection Control: ${g('isAuditControl') === 'yes' ? 'YES - must include 7 elements' : 'No'}  
+Critical Control Field Check: ${g('criticalFieldCheck')}
+Critical Control Verification: ${g('criticalVerification')} [Note: only required if Critical]
+Risk Reduction Justification: ${g('riskReductionJustification')}
+Control Effectiveness Rating: ${g('controlEffectivenessRating')}
+
+IMPORTANT: 1) Check risk description linkage to hazard. 2) If risk cause blank, check if cause is embedded in risk description — do not penalise if so. 3) Apply critical control decision tree for classification. 4) Flag if critical control + effectiveness rating 3 combination. 5) OMIT any field marked [not provided] or [not selected] — do not include it in the response at all.`;
+
+  const btn = document.getElementById('btnReview');
+  btn.disabled = true;
+  btn.textContent = 'Reviewing…';
+  showState('loading');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: entry }]
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const txt = data.content?.[0]?.text || '';
+    reviewResult = JSON.parse(txt.replace(/```json|```/g, '').trim());
+
+    // Render overall
+    const verdictLabels = { meets_standard: '✓  Meets Standard', needs_work: '△  Needs Improvement', does_not_meet: '✕  Does Not Meet Standard' };
+    document.getElementById('overallLabel').textContent = verdictLabels[reviewResult.overallVerdict] || '';
+    document.getElementById('overallSummary').textContent = reviewResult.summary || '';
+    updateRing(reviewResult.overallScore || 0);
+    updateResultBadges();
+    switchResultTab('hazard');
+    showState('results');
+    document.getElementById('btnPrint').style.display = 'inline-block';
+  } catch(e) {
+    const msg = (e && e.message) ? e.message : String(e);
+    let errText;
+    if (msg.toLowerCase().includes('failed to fetch') || msg.toLowerCase().includes('networkerror') || msg.toLowerCase().includes('load')) {
+      errText = 'Network error — could not reach the API. Check: (1) your key is correct, (2) you have credits at console.anthropic.com, (3) you are online.';
+    } else if (msg.toLowerCase().includes('json') || msg.toLowerCase().includes('parse') || msg.toLowerCase().includes('unexpected')) {
+      errText = 'Response error — returned incomplete data. Try reviewing one section at a time, or check your API key has sufficient credits.';
+    } else {
+      errText = 'Review failed: ' + msg;
+    }
+    document.getElementById('errorText').textContent = errText;
+    showState('error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '▶  Review Entry';
+  }
+}
+// ── Audit flag toggle ────────────────────────────────────────────────────
+function toggleAuditFlag() {
+  const v = document.getElementById('isAuditControl').value;
+  document.getElementById('auditFlag').style.display = v === 'yes' ? 'block' : 'none';
+}
+
+// ── CSV field mapping ─────────────────────────────────────────────────────
+const CSV_FIELD_MAP = {
+  'hazard description':           'hazardDescription',
+  'risk title':                   'riskTitle',
+  'risk description':             'riskDescription',
+  'risk cause':                   'riskCause',
+  'consequence category':         'consequenceCategory',
+  'inherent consequence rating':  'consequenceRating',
+  'consequence rating':           'consequenceRating',
+  'inherent consequence justification': 'consequenceJustification',
+  'consequence justification':    'consequenceJustification',
+  'inherent likelihood rating':   'likelihoodRating',
+  'likelihood rating':            'likelihoodRating',
+  'inherent likelihood justification': 'likelihoodJustification',
+  'likelihood justification':     'likelihoodJustification',
+  'sfarp justification':          'sfarpJustification',
+  'sfarp':                        'sfarpJustification',
+  'control description':          'controlDescription',
+  'audit or inspection':          'isAuditControl',
+  'is audit':                     'isAuditControl',
+  'control type':                 'controlType',
+  'hierarchy level':              'hierarchyLevel',
+  'critical control':             'criticalControl',
+  'critical control verification': 'criticalVerification',
+  'critical verification':        'criticalVerification',
+  'critical control field check': 'criticalFieldCheck',
+  'field check':                  'criticalFieldCheck',
+  'risk reduction justification': 'riskReductionJustification',
+  'risk reduction':               'riskReductionJustification',
+  'control effectiveness rating': 'controlEffectivenessRating',
+  'control effectiveness':        'controlEffectivenessRating',
+  'effectiveness':                'controlEffectivenessRating',
+};
+
+// Select option helpers — match by value or text prefix
+function setSelect(id, val) {
+  const el = document.getElementById(id);
+  if (!el) return false;
+  const vl = val.toLowerCase().trim();
+  for (let i = 0; i < el.options.length; i++) {
+    const ot = el.options[i].text.toLowerCase();
+    const ov = el.options[i].value.toLowerCase();
+    if (ov === vl || ot === vl || ot.startsWith(vl) || ov.startsWith(vl)) {
+      el.selectedIndex = i;
+      el.dispatchEvent(new Event('change'));
+      return true;
+    }
+  }
+  return false;
+}
+
+function loadFromCSV() {
+  const raw = document.getElementById('csvPasteArea').value.trim();
+  const statusEl = document.getElementById('csvStatus');
+  if (!raw) { statusEl.innerHTML = '<span class="csv-err">Paste CSV data first.</span>'; return; }
+
+  const lines = raw.split('\n').filter(l => l.trim() && !l.trim().startsWith('//'));
+  let loaded = 0, skipped = 0, unknown = 0;
+  const unknownFields = [];
+
+  lines.forEach(line => {
+    // Parse CSV line (handle quoted values with commas)
+    const cols = parseCSVLine(line);
+    if (cols.length < 2) return;
+    const fieldName = cols[0].trim().toLowerCase().replace(/^"|"$/g,'');
+    const value = cols.slice(1).join(',').trim().replace(/^"|"$/g,'').replace(/""/g,'"');
+    if (fieldName === 'field' || fieldName === '' ) return; // skip header
+
+    const domId = CSV_FIELD_MAP[fieldName];
+    if (!domId) { unknown++; unknownFields.push(cols[0].trim()); return; }
+
+    const el = document.getElementById(domId);
+    if (!el) { skipped++; return; }
+
+    if (el.tagName === 'SELECT') {
+      const ok = setSelect(domId, value);
+      if (ok) { loaded++; } else { skipped++; }
+    } else {
+      el.value = value;
+      loaded++;
+    }
+  });
+
+  updateDots();
+  updateRiskBand();
+  if (document.getElementById('isAuditControl')) toggleAuditFlag();
+
+  let msg = `<span class="csv-ok">✓ ${loaded} field${loaded!==1?'s':''} loaded.</span>`;
+  if (skipped > 0) msg += ` <span style="color:var(--amber)">${skipped} skipped (no match).</span>`;
+  if (unknown > 0) msg += ` <span style="color:var(--grey)">${unknown} unrecognised: ${unknownFields.slice(0,3).join(', ')}${unknownFields.length>3?'…':''}.</span>`;
+  statusEl.innerHTML = msg;
+}
+
+function parseCSVLine(line) {
+  const result = []; let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (ch === ',' && !inQ) { result.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  result.push(cur);
+  return result;
+}
+
+function showCSVTemplate() {
+  const tpl = `Field,Value
+Hazard Description,"The presence of [source] in [area] may expose [person] to harm during [circumstance]."
+Risk Title,"[5-8 word title describing the core occurrence]"
+Risk Description,"There is a risk that [occurrence] may occur, which could result in [consequence], due to [context]."
+Risk Cause,"The risk may be caused by [immediate causes], due to [underlying causes]."
+Consequence Category,Health and Safety
+Consequence Rating,Serious (WHS Act pt3)
+Consequence Justification,"A Serious consequence is justified because [evidence], consistent with the Serious matrix definition."
+Likelihood Rating,Likely
+Likelihood Justification,"The likelihood is rated as Likely because [frequency/exposure/history], consistent with the matrix definition."
+SFARP Justification,"The level of risk has been reduced so far as is reasonably practicable. All feasible controls have been considered per WHS Act s.18..."
+Control Description,"[Control] is in place to [prevent/reduce] [specific risk] by [mechanism]."
+Audit or Inspection,no
+Control Type,Prevention — intersects before the event, reduces likelihood
+Hierarchy Level,3 — Engineering control
+Critical Control,Yes — Critical control
+Critical Verification,"[Responsibility]; [Frequency]; Performance Criteria: [measurable standard]; Evidence: [record type]; Escalation: [response on failure]."
+Critical Control Field Check,"[What to measure] using [instrument/method], at [sample point], at [frequency], confirm [threshold], record in [system], if outside range [escalation action]."
+Risk Reduction,"The implemented control reduces the risk by [engineering/admin/PPE], resulting in [specific reduction in likelihood/consequence] consistent with SFARP principles."
+Control Effectiveness,2 — Effective: engineered + monitoring, human = supervision/verification only`;
+
+  document.getElementById('csvPasteArea').value = tpl;
+  document.getElementById('csvStatus').innerHTML = '<span style="color:var(--mid)">Template loaded — edit values then click Load.</span>';
+}
+
+// ── Print / PDF ─────────────────────────────────────────────────────────
+function printReview() {
+  if (!reviewResult) return;
+
+  const SECTION_LABELS = { hazard:'Hazard', risk:'Risk', control:'Control' };
+  const FIELD_LABELS_ALL = {
+    hazardDescription:'Hazard Description',
+    riskTitle:'Risk Title', riskDescription:'Risk Description', riskCause:'Risk Cause',
+    consequenceJustification:'Inherent Consequence Justification',
+    likelihoodJustification:'Inherent Likelihood Justification',
+    sfarpJustification:'SFARP Justification',
+    controlDescription:'Control Description', controlType:'Control Type',
+    criticalClassification:'Critical Control Classification',
+    criticalVerification:'Critical Control Verification',
+    riskReductionJustification:'Risk Reduction Justification',
+    auditInspectionCheck:'Audit / Inspection as Control',
+    criticalFieldCheck:'Critical Control Field Check',
+    controlEffectivenessRating:'Control Effectiveness Rating'
+  };
+  const RESULT_FIELDS_ALL = {
+    hazard:  ['hazardDescription'],
+    risk:    ['riskTitle','riskDescription','riskCause','consequenceJustification','likelihoodJustification','sfarpJustification'],
+    control: ['controlDescription','controlType','auditInspectionCheck','criticalClassification','criticalVerification','criticalFieldCheck','riskReductionJustification','controlEffectivenessRating']
+  };
+  const VS = {
+    pass:       {bg:'#E8F5E9',bd:'#70AD47',tx:'#1B5E20',dot:'#70AD47',pill:'✓ Meets Standard',pillBg:'#70AD47'},
+    needs_work: {bg:'#FFF8E1',bd:'#E26B0A',tx:'#7B4000',dot:'#E26B0A',pill:'△ Needs Work',    pillBg:'#E26B0A'},
+    fail:       {bg:'#FFEBEE',bd:'#C00000',tx:'#7B0000',dot:'#C00000',pill:'✕ Does Not Meet',  pillBg:'#C00000'}
+  };
+  const OVL = { meets_standard:'✓  Meets Standard', needs_work:'△  Needs Improvement', does_not_meet:'✕  Does Not Meet Standard' };
+  const sc  = reviewResult.overallScore || 0;
+  const col = sc >= 75 ? '#70AD47' : sc >= 50 ? '#E26B0A' : '#C00000';
+
+  const g = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-AU', {day:'2-digit',month:'long',year:'numeric'});
+  const timeStr = now.toLocaleTimeString('en-AU', {hour:'2-digit',minute:'2-digit'});
+
+  // ── Collect submitted entry values ──────────────────────────────────────
+  const entryFields = [
+    { section:'Hazard', fields:[{id:'hazardDescription',label:'Hazard Description'}] },
+    { section:'Risk', fields:[
+      {id:'riskTitle',label:'Risk Title'},{id:'riskDescription',label:'Risk Description'},
+      {id:'riskCause',label:'Risk Cause'},{id:'consequenceCategory',label:'Consequence Category'},
+      {id:'consequenceRating',label:'Inherent Consequence Rating'},
+      {id:'consequenceJustification',label:'Inherent Consequence Justification'},
+      {id:'likelihoodRating',label:'Inherent Likelihood Rating'},
+      {id:'likelihoodJustification',label:'Inherent Likelihood Justification'},
+      {id:'sfarpJustification',label:'SFARP Justification'}
+    ]},
+    { section:'Control', fields:[
+      {id:'controlDescription',label:'Control Description'},{id:'controlType',label:'Control Type'},
+      {id:'hierarchyLevel',label:'Hierarchy Level'},{id:'criticalControl',label:'Critical Control?'},
+      {id:'criticalVerification',label:'Critical Control Verification'},
+      {id:'riskReductionJustification',label:'Risk Reduction Justification'},
+      {id:'controlEffectivenessRating',label:'Control Effectiveness Rating'}
+    ]}
+  ];
+
+  // ── Score ring SVG ──────────────────────────────────────────────────────
+  const circ = 2 * Math.PI * 30;
+  const ringHtml = `<svg width="80" height="80" viewBox="0 0 80 80" class="po-score-ring">
+    <circle cx="40" cy="40" r="30" fill="none" stroke="#E0E0E0" stroke-width="8"/>
+    <circle cx="40" cy="40" r="30" fill="none" stroke="${col}" stroke-width="8"
+      stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${(circ*(1-sc/100)).toFixed(1)}"
+      stroke-linecap="round" transform="rotate(-90 40 40)"/>
+    <text x="40" y="37" text-anchor="middle" font-size="17" font-weight="800" fill="${col}" font-family="DM Sans,system-ui">${sc}</text>
+    <text x="40" y="52" text-anchor="middle" font-size="9" fill="#AAA" font-family="DM Sans,system-ui">/100</text>
+  </svg>`;
+
+  // ── Reviewed fields count ───────────────────────────────────────────────
+  const reviewedCount = reviewResult.fieldsReviewed || Object.keys(reviewResult.fields || {}).length;
+
+  // ── Build HTML ──────────────────────────────────────────────────────────
+  let html = `
+  <div class="po-hdr">
+    <div class="po-hdr-title">Risk Entry Review Report</div>
+    <div class="po-hdr-sub">Figtree Risk Management System · VRTP Group OHS · REF-WHS-001 v2.0</div>
+    <div class="po-hdr-meta">
+      <div class="po-meta-item"><strong>Reviewed</strong>${dateStr} at ${timeStr}</div>
+      <div class="po-meta-item"><strong>Standard</strong>GOHS2.1.2 · ISO 31000:2018 · ISO 45001:2018 · WHS Act 2011 (Qld) ss.17–19</div>
+      <div class="po-meta-item"><strong>Fields Reviewed</strong>${reviewedCount}</div>
+    </div>
+  </div>
+  <div class="po-overall">
+    ${ringHtml}
+    <div>
+      <div class="po-overall-label" style="color:${col}">${OVL[reviewResult.overallVerdict] || ''}</div>
+      <div class="po-overall-summary">${esc2(reviewResult.summary || '')}</div>
+    </div>
+  </div>`;
+
+  // ── Entry submitted section ─────────────────────────────────────────────
+  html += `<div class="po-section"><div class="po-section-title" style="border-left-color:#94A3B8;color:#475569">Entry Submitted</div>`;
+  entryFields.forEach(sec => {
+    const filled = sec.fields.filter(f => { const v = g(f.id); return v && v !== '— Select —'; });
+    if (!filled.length) return;
+    html += `<div class="po-entry-section"><div class="po-entry-title">${sec.section}</div>`;
+    filled.forEach(f => {
+      const val = g(f.id);
+      html += `<div class="po-entry-field"><div class="po-entry-label">${f.label}</div><div class="po-entry-value">${esc2(val)}</div></div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div><div class="po-divider"></div>`;
+
+  // ── Review results section ──────────────────────────────────────────────
+  html += `<div class="po-section"><div class="po-section-title">Review Findings</div>`;
+  ['hazard','risk','control'].forEach(tab => {
+    const ids = RESULT_FIELDS_ALL[tab];
+    const active = ids.filter(id => reviewResult.fields && reviewResult.fields[id] !== undefined);
+    if (!active.length) return;
+    html += `<div class="po-section"><div class="po-section-title">${SECTION_LABELS[tab]}</div>`;
+    active.forEach(id => {
+      const r = reviewResult.fields[id];
+      if (!r) return;
+      const s = VS[r.verdict] || VS.fail;
+      html += `<div class="po-field" style="border-color:${s.bd}">
+        <div class="po-field-hdr" style="background:${s.bg}">
+          <div class="po-field-dot" style="background:${s.dot}"></div>
+          <div class="po-field-name" style="color:${s.tx}">${FIELD_LABELS_ALL[id] || id}</div>
+          <div class="po-field-score" style="color:${s.dot}">${r.score}/100</div>
+          <div class="po-field-pill" style="background:${s.pillBg}">${s.pill}</div>
+        </div>
+        <div class="po-field-body">
+          ${esc2(r.feedback || '')}
+          ${r.suggestion ? `<div class="po-suggestion"><span class="po-suggestion-label">Suggested Rewrite</span>${esc2(r.suggestion)}</div>` : ''}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div>`;
+
+  // ── Footer ──────────────────────────────────────────────────────────────
+  html += `<div class="po-footer">
+    <span>Village Roadshow Theme Parks — Group OHS</span>
+    <span>Figtree Risk Entry Review · Writing Guide V4 · UNCONTROLLED WHEN PRINTED</span>
+    <span>${dateStr}</span>
+  </div>`;
+
+  document.getElementById('printOutput').innerHTML = html;
+  window.print();
+}
+
+function esc2(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+
+</script>
+</body>
+</html>
