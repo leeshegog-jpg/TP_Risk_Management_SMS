@@ -66,6 +66,18 @@
 <div class="form-group"><label>Immediate Actions Taken</label><textarea id="fImmediate" rows="2" placeholder="Actions taken immediately after the incident…"></textarea></div>
 </div>
 <hr style="margin:16px 0;border:none;border-top:1px solid var(--gray-200)"/>
+<p style="font-size:12px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">VRTP Classification &amp; Notifications</p>
+<div class="form-grid">
+<div class="form-group"><label>VRTP Severity Classification</label><select id="fVrtpSeverity"><option value="">—</option><option value="First Aid">First Aid</option><option value="Medical Treatment Injury">MTI — Medical Treatment Injury</option><option value="Lost Time Injury">LTI — Lost Time Injury</option><option value="Serious Injury">Serious Injury</option><option value="Dangerous Incident">Dangerous Incident</option><option value="Near Miss">Near Miss</option></select></div>
+<div class="form-group"><label>Ride / Attraction / Asset</label><input type="text" id="fRideAsset" placeholder="e.g. Tornado ride (Asset ID: WNW-042), Wave Pool"/></div>
+<div class="form-group"><label>Staff on Duty</label><input type="text" id="fStaffPresent" placeholder="e.g. 2 lifeguards, 1 duty manager"/></div>
+<div class="form-group"><label>Current Status of Affected Person</label><input type="text" id="fPersonStatus" placeholder="e.g. Transported to GCUH, ICU admission"/></div>
+<div class="form-group"><label>WHSQ Notified?</label><select id="fWhsq"><option>Not yet assessed</option><option>Yes</option><option>No - assessed not required</option><option>No - under assessment</option></select></div>
+<div class="form-group"><label>OSR (Chapter 9A) Notified?</label><select id="fOsr"><option>Not applicable / under assessment</option><option>Yes</option><option>No - assessed not required</option><option>No - under assessment</option></select></div>
+<div class="form-group"><label>Reporter Role</label><input type="text" id="fReporterRole" placeholder="e.g. Duty Manager, Safety Officer"/></div>
+<div class="form-group span2"><label>Additional Notes</label><textarea id="fOtherNotes" rows="2" placeholder="Witness names not captured above, CCTV coverage, equipment status, weather, patron count, etc."></textarea></div>
+</div>
+<hr style="margin:16px 0;border:none;border-top:1px solid var(--gray-200)"/>
 <p style="font-size:12px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">Investigation</p>
 <div class="form-grid">
 <div class="form-group"><label>Immediate Cause</label><textarea id="fImmCause" rows="2" placeholder="The direct cause — what failed or what act occurred?"></textarea></div>
@@ -79,6 +91,7 @@
 </div>
 <div class="modal-footer">
 <button class="btn btn-outline" onclick="closeForm()">Cancel</button>
+<button class="btn btn-primary" onclick="runPipeline()" title="Submit to the local VRTP agent pipeline for full investigation, compliance and safety-case assessment. Requires start-incident-form.ps1 running on this machine (localhost:8765)." style="background:#C53030">🔬 Run Agent Investigation</button>
 <button class="btn btn-primary" onclick="openCAR()" title="Save and create a Corrective Action" style="background:#7C3AED">Save &amp; Create CAR</button>
 <button class="btn btn-primary" onclick="saveForm()">Save Incident</button>
 </div>
@@ -90,6 +103,24 @@
 <div class="modal-header"><span class="modal-title">Delete Incident?</span><button class="modal-close" onclick="closeDelete()">×</button></div>
 <div class="modal-body"><p style="color:var(--gray-600)">Permanently remove this incident record. Cannot be undone.</p></div>
 <div class="modal-footer"><button class="btn btn-outline" onclick="closeDelete()">Cancel</button><button class="btn btn-primary" style="background:#DC2626" onclick="confirmDelete()">Delete</button></div>
+</div>
+</div>
+
+<!-- Agent pipeline progress -->
+<div class="modal-overlay hidden" id="pipelineOverlay">
+<div class="modal" style="max-width:480px">
+<div class="modal-header"><span class="modal-title" id="pipelineTitle">Running Agent Investigation…</span><button class="modal-close" onclick="closePipeline()">×</button></div>
+<div class="modal-body">
+<ul style="list-style:none;display:flex;flex-direction:column;gap:0" id="pipelineSteps">
+<li style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--gray-200);font-size:13px" id="pstep-start"><span id="picon-start">⏳</span><span id="plbl-start">Incident file created</span></li>
+<li style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--gray-200);font-size:13px" id="pstep-investigation"><span id="picon-investigation">○</span><span id="plbl-investigation">Investigation Agent</span></li>
+<li style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--gray-200);font-size:13px" id="pstep-compliance"><span id="picon-compliance">○</span><span id="plbl-compliance">Compliance Agent</span></li>
+<li style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--gray-200);font-size:13px" id="pstep-safetyCase"><span id="picon-safetyCase">○</span><span id="plbl-safetyCase">Safety Case Trigger Check</span></li>
+<li style="display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px" id="pstep-complete"><span id="picon-complete">○</span><span id="plbl-complete">Complete</span></li>
+</ul>
+<p class="form-hint" id="pipelineHint" style="margin-top:14px">Connecting to local pipeline at localhost:8765…</p>
+</div>
+<div class="modal-footer"><button class="btn btn-outline" onclick="closePipeline()">Close</button></div>
 </div>
 </div>
 
@@ -132,7 +163,7 @@ function render(){
       <td class="wrap" style="max-width:220px;white-space:normal">${r.description||'—'}</td>
       <td>${r.location||'—'}</td>
       <td>${r.reporterName||'—'}</td>
-      <td><span class="badge status-${(r.invStatus||'not-started').toLowerCase().replace(/ /g,'-')}">${r.invStatus||'Not Started'}</span></td>
+      <td><span class="badge status-${(r.invStatus||'not-started').toLowerCase().replace(/ /g,'-')}">${r.invStatus||'Not Started'}</span>${r.pipelineReportUrl?` <a href="${r.pipelineReportUrl}" target="_blank" style="font-size:11px;color:#C53030;font-weight:700;text-decoration:none">🔬 Report (local)</a>`:''}</td>
       <td><span class="badge ${stCls}">${r.status||'Open'}</span></td>
       <td style="white-space:nowrap">
         <button class="btn btn-ghost" onclick="openForm('${r.id}')">Edit</button>
@@ -154,6 +185,10 @@ function openForm(id){
   set('fLocation',r.location); set('fReporter',r.reporterName);
   set('fDesc',r.description); set('fInjuries',r.injuries);
   set('fWitnesses',r.witnesses); set('fImmediate',r.immediateActions);
+  set('fVrtpSeverity',r.vrtpSeverity); set('fRideAsset',r.rideAsset);
+  set('fStaffPresent',r.staffPresent); set('fPersonStatus',r.personStatus);
+  set('fWhsq',r.whsqNotified||'Not yet assessed'); set('fOsr',r.osrNotified||'Not applicable / under assessment');
+  set('fReporterRole',r.reporterRole); set('fOtherNotes',r.otherNotes);
   set('fImmCause',r.immediateCause); set('fRootCause',r.rootCause);
   set('fInvStatus',r.invStatus||'Not Started'); set('fInvDate',r.invDate);
   set('fLessons',r.lessonsLearned); set('fCARs',r.carRefs);
@@ -169,6 +204,10 @@ function collectForm(){
     location:document.getElementById('fLocation').value, reporterName:document.getElementById('fReporter').value,
     description:document.getElementById('fDesc').value, injuries:document.getElementById('fInjuries').value,
     witnesses:document.getElementById('fWitnesses').value, immediateActions:document.getElementById('fImmediate').value,
+    vrtpSeverity:document.getElementById('fVrtpSeverity').value, rideAsset:document.getElementById('fRideAsset').value,
+    staffPresent:document.getElementById('fStaffPresent').value, personStatus:document.getElementById('fPersonStatus').value,
+    whsqNotified:document.getElementById('fWhsq').value, osrNotified:document.getElementById('fOsr').value,
+    reporterRole:document.getElementById('fReporterRole').value, otherNotes:document.getElementById('fOtherNotes').value,
     immediateCause:document.getElementById('fImmCause').value, rootCause:document.getElementById('fRootCause').value,
     invStatus:document.getElementById('fInvStatus').value, invDate:document.getElementById('fInvDate').value,
     lessonsLearned:document.getElementById('fLessons').value, carRefs:document.getElementById('fCARs').value,
@@ -210,6 +249,98 @@ function doImport(input){
     rows.forEach(row=>{SMS.add('incidents',{dateTime:row['Date/Time']||row.dateTime||'',reportDate:row['Report Date']||'',incidentType:row.Type||row.incidentType||'Other',severity:row.Severity||row.severity||1,location:row.Location||row.location||'',reporterName:row.Reporter||row.reporterName||'',description:row.Description||row.description||'',injuries:row.Injuries||'',witnesses:row.Witnesses||'',immediateActions:row['Immediate Actions']||'',immediateCause:row['Immediate Cause']||'',rootCause:row['Root Cause']||'',invStatus:row['Investigation Status']||'Not Started',lessonsLearned:row['Lessons Learned']||'',carRefs:row['CAR Refs']||'',status:row.Status||'Open'});});
     input.value=''; render();
   });
+}
+
+// ---- VRTP Agent Investigation Pipeline (local only — requires start-incident-form.ps1 running) ----
+const PIPELINE_BASE = 'http://localhost:8765';
+let pipelinePoll = null, pipelineRecordId = null;
+
+function setPStep(id, state, label){
+  const icon=document.getElementById('picon-'+id), lbl=document.getElementById('plbl-'+id);
+  if(!icon||!lbl) return;
+  if(label) lbl.textContent=label;
+  if(state==='active'){icon.textContent='⏳';lbl.style.color='#1a1a1a';lbl.style.fontWeight='700';}
+  else if(state==='done'){icon.textContent='✓';lbl.style.color='#16A34A';lbl.style.fontWeight='700';}
+  else if(state==='error'){icon.textContent='✗';lbl.style.color='#DC2626';lbl.style.fontWeight='700';}
+  else if(state==='skip'){icon.textContent='—';lbl.style.color='var(--gray-400)';lbl.style.fontWeight='400';}
+}
+function resetPSteps(){
+  ['start','investigation','compliance','safetyCase','complete'].forEach(s=>{
+    const icon=document.getElementById('picon-'+s); if(icon) icon.textContent='○';
+    const lbl=document.getElementById('plbl-'+s); if(lbl){lbl.style.color='';lbl.style.fontWeight='400';}
+  });
+}
+function openPipelinePanel(){resetPSteps();document.getElementById('pipelineTitle').textContent='Running Agent Investigation…';document.getElementById('pipelineHint').textContent='Connecting to local pipeline at localhost:8765…';document.getElementById('pipelineOverlay').classList.remove('hidden');}
+function closePipeline(){if(pipelinePoll)clearInterval(pipelinePoll);document.getElementById('pipelineOverlay').classList.add('hidden');}
+
+async function runPipeline(){
+  const f=collectForm();
+  if(!f.description.trim()){alert('Description is required.');return;}
+  if(!f.vrtpSeverity){alert('Select a VRTP Severity Classification before running the agent pipeline.');return;}
+  openPipelinePanel();
+  const payload={
+    property:document.getElementById('fLocation').value||'Unknown',
+    incident_date:(f.dateTime||'').split('T')[0]||SMS.today(),
+    incident_time:(f.dateTime||'').split('T')[1]||'',
+    location:f.location, severity:f.vrtpSeverity, ride_asset:f.rideAsset,
+    person_type:'', injury_type:f.injuries, staff_present:f.staffPresent, person_status:f.personStatus,
+    narrative:f.description, immediate_actions:f.immediateActions,
+    whsq_notified:f.whsqNotified, osr_notified:f.osrNotified, other_notes:f.otherNotes,
+    reporter_name:f.reporterName, reporter_role:f.reporterRole
+  };
+  let res;
+  try{
+    res=await fetch(PIPELINE_BASE+'/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  }catch(err){
+    document.getElementById('pipelineHint').textContent='Could not connect to the local pipeline (localhost:8765). Is start-incident-form.ps1 running on this machine? You can still use "Save Incident" to register this without the agent run.';
+    setPStep('start','error','Could not reach local pipeline');
+    return;
+  }
+  const result=await res.json();
+  if(!result.ok){document.getElementById('pipelineHint').textContent='Pipeline rejected the submission: '+(result.error||'unknown error');setPStep('start','error','Submission failed');return;}
+  document.getElementById('pipelineHint').textContent='Incident file created: '+result.filename;
+  setPStep('start','done','Incident file created');
+  setPStep('investigation','active','Investigation Agent running…');
+  if(editId) pipelineRecordId=SMS.update('incidents',editId,f).id; else pipelineRecordId=SMS.add('incidents',f).id;
+  pipelinePoll=setInterval(()=>pollPipeline(result.jobId),5000);
+}
+
+async function pollPipeline(jobId){
+  let data;
+  try{
+    const r=await fetch(PIPELINE_BASE+'/status/'+encodeURIComponent(jobId));
+    data=await r.json();
+  }catch(err){return;}
+  const step=data.step||'';
+  if(step==='starting'){setPStep('start','done');setPStep('investigation','active','Investigation Agent running…');}
+  if(['investigation','compliance','archive','safetyCase','complete'].includes(step)) setPStep('start','done');
+  if(step==='compliance'){setPStep('investigation','done','Investigation Agent');setPStep('compliance','active','Compliance Agent running…');}
+  if(['archive','safetyCase','complete'].includes(step)){setPStep('investigation','done','Investigation Agent');setPStep('compliance','done','Compliance Agent');}
+  if(step==='safetyCase') setPStep('safetyCase','active','Safety Case Trigger check running…');
+  if(step==='complete'){
+    const hasSC=data.outputs&&data.outputs.safetyCase&&data.outputs.safetyCase!=='';
+    setPStep('safetyCase',hasSC?'done':'skip',hasSC?'Safety Case Trigger check':'Safety Case check (not required)');
+    setPStep('complete','done','Pipeline complete');
+    document.getElementById('pipelineTitle').textContent='Pipeline Complete';
+    document.getElementById('pipelineHint').textContent='Investigation, compliance and safety-case outputs saved to the vault. Linking report to this incident record.';
+    clearInterval(pipelinePoll);
+    if(pipelineRecordId){
+      SMS.update('incidents',pipelineRecordId,{
+        invStatus:'Complete', pipelineJobId:jobId,
+        pipelineReportUrl:PIPELINE_BASE+'/report/'+encodeURIComponent(jobId),
+        investigationFile:(data.outputs&&data.outputs.investigation)||'',
+        complianceFile:(data.outputs&&data.outputs.compliance)||'',
+        safetyCaseFile:(data.outputs&&data.outputs.safetyCase)||''
+      });
+    }
+    closeForm(); render();
+  }
+  if(data.status==='error'){
+    clearInterval(pipelinePoll);
+    document.getElementById('pipelineTitle').textContent='Pipeline Error';
+    document.getElementById('pipelineHint').textContent='Error at step '+step+'. '+(data.message||'');
+    setPStep(step||'start','error');
+  }
 }
 
 // Pre-fill from query string (from incident page "Create CAR" redirect back)

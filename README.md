@@ -32,3 +32,11 @@ by how many cells look like URLs and picks the best match.
 | ID | URL | Category | Notes |
 |----|-----|----------|-------|
 | 1  | https://example.com/path?q=1 | Web | … |
+
+## VRTP Agent Investigation Pipeline
+
+`incident-report.html` now includes a **🔬 Run Agent Investigation** action alongside the standard incident register. It submits the report to a local agent pipeline (Investigation Agent → Compliance Agent → Safety Case Trigger check) running on the reporting machine, then links the resulting investigation, compliance and safety-case outputs — plus a printable report — back onto the incident record.
+
+The pipeline itself (PowerShell HTTP server + the two Claude-driven agents) lives in [`local-automation/`](local-automation/README.md) and only runs locally; it cannot run on a static host like GitHub Pages. Without it running, the page still works as a standard incident register (`Save Incident`).
+
+Last updated: 22 June 2026.
