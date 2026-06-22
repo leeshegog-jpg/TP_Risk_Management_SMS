@@ -24,11 +24,16 @@
 <a href="url-parser.html">⬡ URL Parser</a>
 </div></nav>
 <main class="container">
+<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+<button class="btn btn-outline" style="font-size:12px" onclick="doExportAll()" title="Download full JSON backup of all SMS data">⬇ Backup All Data</button>
+<label class="btn btn-outline" style="font-size:12px;cursor:pointer" title="Restore a previously exported JSON backup">⬆ Restore Backup<input type="file" accept=".json" hidden onchange="doImportAll(this)"/></label>
+</div>
 <div class="hub-stats" id="hubStats">
 <div class="hub-stat info"><div class="hub-stat-val" id="sRO">—</div><div class="hub-stat-label">Open Risks</div><div class="hub-stat-sub" id="sRCH"></div></div>
 <div class="hub-stat" id="iCard"><div class="hub-stat-val" id="sIO">—</div><div class="hub-stat-label">Open Incidents</div><div class="hub-stat-sub" id="sIM"></div></div>
 <div class="hub-stat" id="cCard"><div class="hub-stat-val" id="sCO">—</div><div class="hub-stat-label">Open Corrective Actions</div><div class="hub-stat-sub" id="sCOD"></div></div>
 <div class="hub-stat" id="aCard"><div class="hub-stat-val" id="sAU">—</div><div class="hub-stat-label">Upcoming Audits</div><div class="hub-stat-sub" id="sAOD"></div></div>
+<div class="hub-stat" id="rdCard"><div class="hub-stat-val" id="sRD">—</div><div class="hub-stat-label">Risk Reviews Due</div><div class="hub-stat-sub">Review date passed</div></div>
 </div>
 <h2 style="font-size:13px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.06em;margin-top:8px">SMS Modules</h2>
 <div class="module-grid">
@@ -43,7 +48,7 @@
 <a href="flowchart.html" class="module-card"><div class="module-card-icon">⬡</div><div class="module-card-title">SFARP Risk Assessment Flowchart</div><div class="module-card-desc">Decision flowchart for So Far As Reasonably Practicable risk assessments aligned to WHS legislation.</div><div class="module-card-meta">Open →</div></a>
 <a href="GOHS4.1.8.X_FARSI_Control_Effectiveness_Calculator_v0.2.html" class="module-card"><div class="module-card-icon">⬡</div><div class="module-card-title">FARSI Control Effectiveness Calculator</div><div class="module-card-desc">GOHS 4.1.8.X — evaluate control effectiveness across Frequency, Adequacy, Reliability, Specificity and Independence.</div><div class="module-card-meta">Open →</div></a>
 <a href="vrtp-ohs-tools/Figtree_Risk_Entry_Review.html" class="module-card"><div class="module-card-icon">⬡</div><div class="module-card-title">Figtree Risk Entry Review</div><div class="module-card-desc">AI-assisted review tool for evaluating risk register entries against VRTP OHS standards and quality criteria.</div><div class="module-card-meta">Open →</div></a>
-<a href="CRITICAL_RISK_MANAGEMENT_BRIEFING.md" class="module-card"><div class="module-card-icon">📄</div><div class="module-card-title">Critical Risk Management Briefing</div><div class="module-card-desc">Comprehensive reference covering critical risk frameworks, control hierarchies, implementation roadmaps and maturity assessment.</div><div class="module-card-meta">Open →</div></a>
+<a href="briefing-viewer.html" class="module-card"><div class="module-card-icon">📄</div><div class="module-card-title">Critical Risk Management Briefing</div><div class="module-card-desc">Comprehensive reference covering critical risk frameworks, control hierarchies, implementation roadmaps and maturity assessment.</div><div class="module-card-meta">Open →</div></a>
 </div>
 <div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><h2 style="font-size:15px;font-weight:700">Recent Activity</h2><span style="font-size:12px;color:var(--gray-400)">Last 10 entries across all modules</span></div><div id="recentList"></div></div>
 </main>
@@ -63,6 +68,8 @@ document.getElementById('cCard').className='hub-stat '+(s.carOverdue>0?'danger':
 document.getElementById('sAU').textContent=s.auditUpcoming;
 document.getElementById('sAOD').textContent=s.auditOverdue>0?'⚠ '+s.auditOverdue+' overdue':'None overdue';
 document.getElementById('aCard').className='hub-stat '+(s.auditOverdue>0?'danger':'info');
+document.getElementById('sRD').textContent=s.riskReviewsDue;
+document.getElementById('rdCard').className='hub-stat '+(s.riskReviewsDue>0?'danger':'ok');
 document.getElementById('lR').textContent=s.riskOpen+' open · '+s.riskTotal+' total →';
 document.getElementById('lI').textContent=s.incidentOpen+' open · '+s.incidentTotal+' total →';
 document.getElementById('lC').textContent=s.carOpen+' open · '+s.carOverdue+' overdue →';
@@ -77,5 +84,19 @@ const el=document.getElementById('recentList');
 if(!recent.length){el.innerHTML='<div class="empty-state"><span class="empty-state-icon">📭</span><p>No records yet — start by adding risks, incidents or audits using the modules above.</p></div>';}
 else{el.innerHTML=recent.slice(0,10).map(r=>`<a href="${r.href}" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--gray-100);text-decoration:none;color:inherit"><span style="flex-shrink:0;background:${tc[r.type]}22;color:${tc[r.type]};font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px">${r.type}</span><span style="flex-shrink:0;font-size:12px;color:var(--gray-400);font-family:monospace">${r.id}</span><span style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.label}</span><span style="flex-shrink:0;font-size:11px;color:var(--gray-400)">${SMS.fmtDate(r.ts)}</span></a>`).join('');}
 })();
+
+function doExportAll(){
+  SMS.exportAll();
+}
+function doImportAll(input){
+  if(!input.files[0]) return;
+  if(!confirm('This will overwrite all current SMS data with the backup file. Continue?')){input.value='';return;}
+  SMS.importAll(input.files[0],(err,count)=>{
+    input.value='';
+    if(err){alert('Failed to import: '+err.message);return;}
+    alert('Restored '+count+' records from backup. The page will reload.');
+    window.location.reload();
+  });
+}
 </script>
 </body></html>
