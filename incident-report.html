@@ -53,6 +53,8 @@
 <div class="modal">
 <div class="modal-header"><span class="modal-title" id="modalTitle">Report Incident</span><button class="modal-close" onclick="closeForm()">×</button></div>
 <div class="modal-body">
+<div id="modalPipelineNote" style="display:none;margin-bottom:6px;padding:10px 12px;background:#FEF2F2;border:1px solid #FECACA;border-radius:6px;font-size:13px"></div>
+<button type="button" class="btn btn-ghost" style="font-size:11px;padding:2px 8px;margin-bottom:12px" onclick="linkPipelineJob()" title="Already have a job ID from the pipeline (e.g. one that finished after this tab was closed)? Attach it here.">🔗 Link existing pipeline job…</button>
 <div class="form-grid">
 <div class="form-group"><label>Date &amp; Time of Incident *</label><input type="datetime-local" id="fDateTime"/></div>
 <div class="form-group"><label>Date Reported</label><input type="date" id="fReportDate"/></div>
@@ -193,6 +195,16 @@ function openForm(id){
   set('fInvStatus',r.invStatus||'Not Started'); set('fInvDate',r.invDate);
   set('fLessons',r.lessonsLearned); set('fCARs',r.carRefs);
   set('fStatus',r.status||'Open');
+  const note=document.getElementById('modalPipelineNote');
+  if(r.pipelineReportUrl){
+    note.style.display='block';
+    note.innerHTML='🔬 Agent investigation complete — <a href="'+r.pipelineReportUrl+'" target="_blank" style="color:#C53030;font-weight:700;text-decoration:none">view full report</a>';
+  }else if(r.pipelineJobId){
+    note.style.display='block';
+    note.innerHTML='🔬 Agent investigation in progress (job '+r.pipelineJobId+'). Reopen this incident, or just reload the page, to pick up the finished report automatically.';
+  }else{
+    note.style.display='none'; note.innerHTML='';
+  }
   document.getElementById('modalOverlay').classList.remove('hidden');
 }
 function closeForm(){document.getElementById('modalOverlay').classList.add('hidden');editId=null;}
@@ -301,7 +313,11 @@ async function runPipeline(){
   document.getElementById('pipelineHint').textContent='Incident file created: '+result.filename;
   setPStep('start','done','Incident file created');
   setPStep('investigation','active','Investigation Agent running…');
-  if(editId) pipelineRecordId=SMS.update('incidents',editId,f).id; else pipelineRecordId=SMS.add('incidents',f).id;
+  // Persist the job link immediately — if this tab closes before the agents finish,
+  // checkPendingPipelines() will still pick up the result on next page load.
+  const pf=Object.assign({},f,{pipelineJobId:result.jobId,invStatus:'In Progress'});
+  if(editId) pipelineRecordId=SMS.update('incidents',editId,pf).id; else pipelineRecordId=SMS.add('incidents',pf).id;
+  render();
   pipelinePoll=setInterval(()=>pollPipeline(result.jobId),5000);
 }
 
@@ -343,7 +359,50 @@ async function pollPipeline(jobId){
   }
 }
 
+// Manually attach a job ID to the incident being edited — recovers jobs that
+// finished before this version of the page existed, or that were submitted from
+// the standalone form in an earlier session.
+async function linkPipelineJob(){
+  if(!editId){alert('Save this incident first (Save Incident), then reopen it to link a job.');return;}
+  const jobId=prompt('Enter the pipeline Job ID to link (e.g. Superman-20260618-Superman):');
+  if(!jobId) return;
+  SMS.update('incidents',editId,{pipelineJobId:jobId.trim(),invStatus:'In Progress'});
+  await checkPendingPipelines();
+  openForm(editId);
+}
+
+// Recover completed pipeline jobs whose tab was closed before the agents finished —
+// runs every time this page loads, so a finished investigation always surfaces here.
+async function checkPendingPipelines(){
+  const pending=SMS.get('incidents').filter(r=>r.pipelineJobId && r.invStatus!=='Complete');
+  if(!pending.length) return;
+  let changed=false;
+  for(const r of pending){
+    try{
+      const ctrl=new AbortController();
+      const t=setTimeout(()=>ctrl.abort(),3000);
+      const res=await fetch(PIPELINE_BASE+'/status/'+encodeURIComponent(r.pipelineJobId),{signal:ctrl.signal});
+      clearTimeout(t);
+      const data=await res.json();
+      if(data.step==='complete'){
+        SMS.update('incidents',r.id,{
+          invStatus:'Complete',
+          pipelineReportUrl:PIPELINE_BASE+'/report/'+encodeURIComponent(r.pipelineJobId),
+          investigationFile:(data.outputs&&data.outputs.investigation)||'',
+          complianceFile:(data.outputs&&data.outputs.compliance)||'',
+          safetyCaseFile:(data.outputs&&data.outputs.safetyCase)||''
+        });
+        changed=true;
+      }else if(data.status==='error'){
+        changed=true; // surface nothing destructive, just re-render in case status text matters elsewhere
+      }
+    }catch(err){ /* local pipeline not running right now — retried automatically next time this page loads */ }
+  }
+  if(changed) render();
+}
+
 // Pre-fill from query string (from incident page "Create CAR" redirect back)
 render();
+checkPendingPipelines();
 </script>
 </body></html>
